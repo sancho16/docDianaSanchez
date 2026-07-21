@@ -1,0 +1,136 @@
+/* ══════════════════════════════════════════════
+   TURQUOISE THEME OVERRIDE
+   Replaces all red (#c0392b) with turquoise (#0d9488)
+   To revert to red: remove this file's <link> from HTML
+   ══════════════════════════════════════════════ */
+
+:root {
+  --red:        #0d9488;   /* teal-600  */
+  --red-light:  #14b8a6;   /* teal-500  */
+  --red-dark:   #0f766e;   /* teal-700  */
+  --border-red: rgba(13,148,136,0.35);
+  --shadow-red: 0 4px 24px rgba(13,148,136,0.25);
+}
+
+/* ── Hardcoded rgba(192,57,43,…) overrides throughout style.css ── */
+
+/* Hero pulse glows */
+.hero__pulse {
+  background: radial-gradient(circle, rgba(13,148,136,0.18) 0%, transparent 70%);
+}
+
+/* Hero badge */
+.hero__badge {
+  background: rgba(13,148,136,0.12);
+  border-color: rgba(13,148,136,0.35);
+}
+.hero__badge-dot { background: #14b8a6; }
+
+/* Scroll progress bar on video */
+.vid-scrub__progress-bar {
+  background: linear-gradient(90deg, #0f766e, #14b8a6);
+}
+
+/* Vid scrub label badge */
+.vid-scrub__label {
+  background: rgba(13,148,136,0.15);
+  border-color: rgba(13,148,136,0.35);
+}
+
+/* About photo accent glow */
+.about__accent {
+  background: radial-gradient(circle, rgba(13,148,136,0.15) 0%, transparent 70%);
+}
+
+/* About photo badge */
+.about__photo-badge {
+  background: #0d9488;
+  box-shadow: 0 8px 24px rgba(13,148,136,0.4);
+}
+
+/* Service cards featured */
+.service-card--featured {
+  border-color: rgba(13,148,136,0.35);
+  background: linear-gradient(135deg, rgba(13,148,136,0.06) 0%, var(--bg-card) 60%);
+}
+.service-card--featured .service-card__icon {
+  background: rgba(13,148,136,0.15);
+}
+
+/* Service card top border on hover */
+.service-card::before {
+  background: linear-gradient(90deg, #0f766e, #14b8a6);
+}
+.service-card:hover { box-shadow: 0 4px 24px rgba(13,148,136,0.25); }
+
+/* Service card tag */
+.service-card__tag {
+  background: rgba(13,148,136,0.1);
+  border-color: rgba(13,148,136,0.35);
+}
+
+/* Testimonial card hover */
+.testimonial-card:hover { box-shadow: 0 4px 24px rgba(13,148,136,0.25); }
+
+/* Testimonial opening quote */
+.testimonial-card p::before { color: #0d9488; }
+
+/* Schedule table header */
+.schedule__table thead { background: rgba(13,148,136,0.12); border-color: rgba(13,148,136,0.35); }
+.schedule__table th { color: #14b8a6; }
+
+/* Contact form focus */
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: #0d9488;
+  box-shadow: 0 0 0 3px rgba(13,148,136,0.15);
+}
+
+/* Navbar card shimmer */
+.rv-card::before {
+  background: linear-gradient(90deg, #0f766e, #14b8a6, #0f766e);
+}
+
+/* Admin panel accent  */
+.adm-login {
+  background: radial-gradient(ellipse at 60% 40%, rgba(13,148,136,0.1) 0%, transparent 60%), var(--bg);
+}
+.adm-badge         { background: rgba(13,148,136,0.2); color: #14b8a6; }
+.adm-step-num      { background: rgba(13,148,136,0.15); border-color: rgba(13,148,136,0.3); color: #14b8a6; }
+.adm-steps-list code { color: #14b8a6; }
+.adm-btn--primary  { background: #0d9488; }
+.adm-btn--primary:hover { background: #14b8a6; }
+.adm-nav__item--active { background: rgba(13,148,136,0.12); }
+.adm-nav__item--active svg { color: #14b8a6; }
+.adm-filter-btn--active { background: rgba(13,148,136,0.15); border-color: rgba(13,148,136,0.4); }
+
+/* Review page stars keep gold, cross turns teal */
+.rv-cross { color: #14b8a6; }
+.rv-card::before { background: linear-gradient(90deg, #0f766e, #14b8a6, #0f766e); }
+.hero__badge-dot { animation: blink-teal 1.6s ease infinite; }
+@keyframes blink-teal { 0%,100%{opacity:1;background:#14b8a6} 50%{opacity:0.3} }
+
+/* Back to top button */
+.back-top { background: #0d9488; }
+.back-top:hover { background: #14b8a6; }
+
+/* Nav CTA button */
+.nav-link--cta { background: #0d9488 !important; }
+.nav-link--cta:hover { background: #14b8a6 !important; }
+
+/* Buttons */
+.btn--primary { background: #0d9488; box-shadow: 0 4px 24px rgba(13,148,136,0.25); }
+.btn--primary:hover { background: #14b8a6; box-shadow: 0 8px 28px rgba(13,148,136,0.4); }
+.btn--ghost:hover { border-color: #14b8a6; color: #14b8a6; background: rgba(13,148,136,0.07); }
+
+/* Hero stats glow */
+.pulse-1, .pulse-2 {
+  background: radial-gradient(circle, rgba(13,148,136,0.18) 0%, transparent 70%);
+}
+
+/* Success check SVG */
+.rv-success__circle,
+.rv-success__check { stroke: #14b8a6; }
+
+/* og-image & favicon keep existing — no change needed */
