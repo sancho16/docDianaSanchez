@@ -1,0 +1,272 @@
+/* ══════════════════════════════════════════════
+   UPDATES — Photo, Video Scrub, Testimonials
+   ══════════════════════════════════════════════ */
+
+/* ══════════════════════════════════════════════
+   ABOUT — Real photo layout
+   ══════════════════════════════════════════════ */
+.about__photo-wrap {
+  position: relative;
+  z-index: 1;
+  max-width: 380px;
+  margin-inline: auto;
+}
+
+.about__photo {
+  width: 100%;
+  height: 500px;
+  object-fit: cover;
+  object-position: center top;
+  border-radius: 20px;
+  display: block;
+  border: 1px solid var(--border);
+  box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+  transition: transform 0.5s ease;
+}
+
+.about__photo-wrap:hover .about__photo {
+  transform: scale(1.02);
+}
+
+.about__photo-badge {
+  position: absolute;
+  bottom: -16px;
+  right: -16px;
+  background: var(--red);
+  border-radius: 14px;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 8px 24px rgba(192,57,43,0.4);
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--white);
+  border: 2px solid rgba(255,255,255,0.1);
+}
+
+.about__photo-badge-cross {
+  font-size: 1.1rem;
+  opacity: 0.9;
+}
+
+/* Override old card-based about visual */
+.about__card { display: none; }
+
+/* ══════════════════════════════════════════════
+   VIDEO SCRUB SECTION
+   ══════════════════════════════════════════════ */
+.vid-scrub {
+  position: relative;
+  /* Height set dynamically by JS, fallback = 300vh */
+  min-height: 300vh;
+}
+
+.vid-scrub__sticky {
+  position: sticky;
+  top: 0;
+  width: 100%;
+  height: 100svh;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vid-scrub__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  /* Prevent flash of first frame before JS attaches */
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
+.vid-scrub__video.ready {
+  opacity: 1;
+}
+
+.vid-scrub__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(10,10,10,0.55) 0%,
+    rgba(10,10,10,0.2) 50%,
+    rgba(10,10,10,0.7) 100%
+  );
+  z-index: 1;
+}
+
+.vid-scrub__content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  padding-inline: 24px;
+  max-width: 700px;
+  pointer-events: none;
+}
+
+.vid-scrub__label {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  background: rgba(192,57,43,0.15);
+  border: 1px solid var(--border-red);
+  border-radius: 100px;
+  padding: 6px 16px;
+}
+
+.vid-scrub__title {
+  font-family: var(--font-serif);
+  font-size: clamp(2.4rem, 6vw, 4.5rem);
+  font-weight: 700;
+  color: var(--white);
+  line-height: 1.1;
+  margin-bottom: 20px;
+  text-shadow: 0 2px 20px rgba(0,0,0,0.5);
+}
+
+.vid-scrub__desc {
+  font-size: 1.1rem;
+  color: rgba(255,255,255,0.75);
+  max-width: 500px;
+  margin-inline: auto;
+  text-shadow: 0 1px 8px rgba(0,0,0,0.4);
+}
+
+/* Scroll progress bar at bottom of video section */
+.vid-scrub__progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(255,255,255,0.08);
+  z-index: 3;
+}
+
+.vid-scrub__progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--red-dark), var(--red-light));
+  transition: width 0.05s linear;
+}
+
+/* Scroll hint indicator */
+.vid-scrub__sticky::after {
+  content: 'Scroll';
+  position: absolute;
+  bottom: 28px;
+  right: 28px;
+  z-index: 3;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.4);
+  writing-mode: vertical-rl;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Fallback: if video can't load show a dark gradient */
+.vid-scrub__video[data-error] {
+  display: none;
+}
+
+/* ══════════════════════════════════════════════
+   TESTIMONIALS — Dynamic + skeleton
+   ══════════════════════════════════════════════ */
+.testimonials__cta {
+  display: flex;
+  justify-content: center;
+  margin-top: 48px;
+}
+
+.testimonials__review-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+.testimonial-card__stars {
+  font-size: 1.05rem;
+  letter-spacing: 3px;
+  margin-bottom: 4px;
+}
+
+/* Loading skeletons */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.4; }
+  50%       { opacity: 0.8; }
+}
+
+.testimonial-skeleton {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 36px 28px;
+  min-height: 200px;
+  animation: skeleton-pulse 1.5s ease infinite;
+}
+
+.testimonial-skeleton::before {
+  content: '';
+  display: block;
+  width: 80px;
+  height: 12px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 6px;
+  margin-bottom: 16px;
+}
+
+.testimonial-skeleton::after {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 60px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 6px;
+}
+
+/* ══════════════════════════════════════════════
+   RESPONSIVE
+   ══════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .about__photo { height: 380px; }
+  .about__photo-badge { bottom: -12px; right: -8px; padding: 10px 14px; font-size: 0.82rem; }
+  .vid-scrub__title { font-size: clamp(2rem, 8vw, 3rem); }
+}
+
+@media (max-width: 480px) {
+  .about__photo { height: 320px; }
+  .about__photo-wrap { max-width: 100%; }
+}
+
+/* ══════════════════════════════════════════════
+   FEATURED SERVICE CARDS (IV Therapies)
+   ══════════════════════════════════════════════ */
+.service-card--featured {
+  border-color: var(--border-red);
+  background: linear-gradient(135deg, rgba(192,57,43,0.06) 0%, var(--bg-card) 60%);
+}
+.service-card--featured .service-card__icon {
+  background: rgba(192,57,43,0.15);
+}
+.service-card--featured::before {
+  transform: scaleX(1) !important;
+  opacity: 0.5;
+}
+
+/* Wider grid to fit 3 cols for IV cards */
+@media (min-width: 1025px) {
+  .services__grid { grid-template-columns: repeat(3, 1fr); }
+}

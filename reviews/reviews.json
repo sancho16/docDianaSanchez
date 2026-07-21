@@ -1,0 +1,29 @@
+[
+  {
+    "id": "r001",
+    "name": "María J.",
+    "since": "Paciente desde 2019",
+    "rating": 5,
+    "text": "La Dra. Diana siempre se toma el tiempo para escucharme y explicarme todo con claridad. Su atención es excepcional.",
+    "approved": true,
+    "date": "2024-03-15"
+  },
+  {
+    "id": "r002",
+    "name": "Carlos R.",
+    "since": "Paciente desde 2017",
+    "rating": 5,
+    "text": "Excelente profesional. Llevé a mis hijos desde pequeños y siempre nos ha atendido con mucha dedicación y cariño.",
+    "approved": true,
+    "date": "2024-05-02"
+  },
+  {
+    "id": "r003",
+    "name": "Ana P.",
+    "since": "Paciente desde 2020",
+    "rating": 5,
+    "text": "Gracias a su seguimiento constante logré controlar mi diabetes. Me siento acompañada en todo momento.",
+    "approved": true,
+    "date": "2024-07-18"
+  }
+]

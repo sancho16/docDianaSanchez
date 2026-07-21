@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Comparta su experiencia con la Dra. Diana Sánchez Dávila – Médico General en Costa Rica." />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Deje su reseña | Dra. Diana Sánchez</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/review.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+</head>
+<body class="review-page">
+
+  <!-- Particles background -->
+  <div class="rv-bg" aria-hidden="true">
+    <div class="rv-glow rv-glow--1"></div>
+    <div class="rv-glow rv-glow--2"></div>
+    <canvas id="particles" aria-hidden="true"></canvas>
+  </div>
+
+  <div class="rv-wrap">
+
+    <!-- Back link -->
+    <a href="index.html#testimonios" class="rv-back" aria-label="Volver al sitio">
+      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M13 4l-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Volver
+    </a>
+
+    <!-- STEP CONTAINER -->
+    <div class="rv-card" id="rv-card" role="main">
+
+      <!-- ── STEP 1: Rating ── -->
+      <div class="rv-step" id="step-1" data-step="1">
+        <div class="rv-step__header">
+          <div class="rv-logo" aria-hidden="true">
+            <span class="rv-cross">✚</span>
+          </div>
+          <h1 class="rv-title">¿Cómo fue su experiencia?</h1>
+          <p class="rv-subtitle">Su opinión nos ayuda a mejorar y a otros pacientes a encontrar la atención que necesitan.</p>
+        </div>
+
+        <div class="rv-stars-wrap">
+          <fieldset class="rv-stars" id="stars" aria-label="Calificación con estrellas">
+            <legend class="sr-only">Seleccione una calificación del 1 al 5</legend>
+            <button type="button" class="rv-star" data-value="1" aria-label="1 estrella">★</button>
+            <button type="button" class="rv-star" data-value="2" aria-label="2 estrellas">★</button>
+            <button type="button" class="rv-star" data-value="3" aria-label="3 estrellas">★</button>
+            <button type="button" class="rv-star" data-value="4" aria-label="4 estrellas">★</button>
+            <button type="button" class="rv-star" data-value="5" aria-label="5 estrellas">★</button>
+          </fieldset>
+          <p class="rv-stars-label" id="stars-label" aria-live="polite">Toque una estrella para calificar</p>
+        </div>
+
+        <button class="btn btn--primary rv-next-btn" id="step1-next" disabled>
+          Continuar <span aria-hidden="true">→</span>
+        </button>
+      </div>
+
+      <!-- ── STEP 2: Review Text ── -->
+      <div class="rv-step rv-step--hidden" id="step-2" data-step="2" aria-hidden="true">
+        <div class="rv-step__header">
+          <div class="rv-stars-display" id="stars-display" aria-hidden="true"></div>
+          <h2 class="rv-title">Cuéntenos su experiencia</h2>
+          <p class="rv-subtitle">¿Qué le pareció la atención? Su comentario puede inspirar a otros pacientes.</p>
+        </div>
+
+        <div class="rv-form-group">
+          <label for="rv-text">Su reseña <span class="required" aria-hidden="true">*</span></label>
+          <textarea id="rv-text" name="rv-text" rows="5"
+            placeholder="Ej: La Dra. Diana fue muy atenta y me explicó todo con claridad..."
+            maxlength="500" aria-describedby="rv-text-count" required></textarea>
+          <div class="rv-text-meta">
+            <span class="rv-field-error" id="rv-text-error" role="alert" aria-live="polite"></span>
+            <span class="rv-char-count" id="rv-text-count" aria-live="polite">0 / 500</span>
+          </div>
+        </div>
+
+        <div class="rv-step-actions">
+          <button class="btn btn--ghost rv-prev-btn" data-target="1">← Atrás</button>
+          <button class="btn btn--primary rv-next-btn" id="step2-next">Continuar →</button>
+        </div>
+      </div>
+
+      <!-- ── STEP 3: Name ── -->
+      <div class="rv-step rv-step--hidden" id="step-3" data-step="3" aria-hidden="true">
+        <div class="rv-step__header">
+          <div class="rv-stars-display" id="stars-display-3" aria-hidden="true"></div>
+          <h2 class="rv-title">¿Cómo le llamamos?</h2>
+          <p class="rv-subtitle">Solo su nombre o iniciales. Puede mantenerse anónimo/a.</p>
+        </div>
+
+        <div class="rv-form-group">
+          <label for="rv-name">Nombre <span class="required" aria-hidden="true">*</span></label>
+          <input type="text" id="rv-name" name="rv-name"
+            placeholder="Ej: María J. o Paciente anónimo/a"
+            maxlength="60" required autocomplete="given-name"
+            aria-describedby="rv-name-error" />
+          <span class="rv-field-error" id="rv-name-error" role="alert" aria-live="polite"></span>
+        </div>
+
+        <div class="rv-form-group">
+          <label for="rv-since">¿Desde cuándo es paciente? <span class="rv-optional">(opcional)</span></label>
+          <input type="text" id="rv-since" name="rv-since"
+            placeholder="Ej: Paciente desde 2020"
+            maxlength="60" autocomplete="off" />
+        </div>
+
+        <div class="rv-step-actions">
+          <button class="btn btn--ghost rv-prev-btn" data-target="2">← Atrás</button>
+          <button class="btn btn--primary rv-next-btn" id="step3-next">Enviar reseña ✓</button>
+        </div>
+      </div>
+
+      <!-- ── STEP 4: Success ── -->
+      <div class="rv-step rv-step--hidden" id="step-4" data-step="4" aria-hidden="true">
+        <div class="rv-success">
+          <div class="rv-success__icon" aria-hidden="true">
+            <svg viewBox="0 0 64 64" fill="none">
+              <circle class="rv-success__circle" cx="32" cy="32" r="28" stroke="var(--red-light)" stroke-width="3"/>
+              <path class="rv-success__check" d="M20 32l9 9 15-16" stroke="var(--red-light)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <h2 class="rv-title">¡Muchas gracias!</h2>
+          <p class="rv-subtitle">Su reseña fue recibida y será revisada antes de publicarse. ¡Apreciamos mucho su tiempo!</p>
+          <a href="index.html" class="btn btn--primary">Volver al inicio</a>
+        </div>
+      </div>
+
+      <!-- Progress dots -->
+      <div class="rv-progress" role="progressbar" aria-label="Paso" aria-valuenow="1" aria-valuemin="1" aria-valuemax="3" id="rv-progress">
+        <span class="rv-dot rv-dot--active" data-step="1" aria-label="Paso 1"></span>
+        <span class="rv-dot" data-step="2" aria-label="Paso 2"></span>
+        <span class="rv-dot" data-step="3" aria-label="Paso 3"></span>
+      </div>
+
+    </div><!-- /rv-card -->
+  </div><!-- /rv-wrap -->
+
+  <script src="js/reviews.js"></script>
+  <script src="js/review-page.js"></script>
+</body>
+</html>

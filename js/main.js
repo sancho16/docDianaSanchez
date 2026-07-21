@@ -152,80 +152,112 @@
 
   sections.forEach(section => navObserver.observe(section));
 
-  // ── CONTACT FORM VALIDATION & SUBMIT ──
-  const form = document.getElementById('contact-form');
+  // ── CONTACT FORM — Formspree AJAX + localStorage backup ──
+  const form        = document.getElementById('contact-form');
   const formSuccess = document.getElementById('form-success');
+  const submitBtn   = document.getElementById('form-submit-btn');
+
+  // Set min date on date picker to today
+  const dateInput = document.getElementById('preferred-date');
+  if (dateInput) {
+    const today = new Date().toISOString().split('T')[0];
+    dateInput.setAttribute('min', today);
+  }
 
   function validateField(field) {
-    const group = field.closest('.form-group');
-    const errorEl = group.querySelector('.field-error');
-    let errorMsg = '';
+    const group   = field.closest('.form-group');
+    const errorEl = group ? group.querySelector('.field-error') : null;
+    let errorMsg  = '';
 
     if (field.required && !field.value.trim()) {
       errorMsg = 'Este campo es obligatorio.';
     } else if (field.type === 'email' && field.value.trim()) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(field.value.trim())) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(field.value.trim())) {
         errorMsg = 'Ingrese un correo electrónico válido.';
       }
     } else if (field.type === 'tel' && field.value.trim()) {
-      const telRegex = /^[\d\s\+\-\(\)]{7,}$/;
-      if (!telRegex.test(field.value.trim())) {
+      if (!/^[\d\s\+\-\(\)]{7,}$/.test(field.value.trim())) {
         errorMsg = 'Ingrese un número de teléfono válido.';
       }
     }
 
-    if (errorMsg) {
-      group.classList.add('has-error');
-      errorEl.textContent = errorMsg;
-      return false;
-    } else {
-      group.classList.remove('has-error');
-      errorEl.textContent = '';
-      return true;
-    }
+    if (group) group.classList.toggle('has-error', !!errorMsg);
+    if (errorEl) errorEl.textContent = errorMsg;
+    return !errorMsg;
   }
 
-  // Live validation on blur
-  form.querySelectorAll('input, textarea').forEach(field => {
-    field.addEventListener('blur', () => validateField(field));
+  form.querySelectorAll('input[required], textarea[required]').forEach(field => {
+    field.addEventListener('blur',  () => validateField(field));
     field.addEventListener('input', () => {
-      if (field.closest('.form-group').classList.contains('has-error')) {
-        validateField(field);
-      }
+      if (field.closest('.form-group').classList.contains('has-error')) validateField(field);
     });
   });
 
-  form.addEventListener('submit', function(e) {
+  function saveAppointmentLocally(data) {
+    const APPT_KEY = 'dds_appointments';
+    let list = [];
+    try { list = JSON.parse(localStorage.getItem(APPT_KEY) || '[]'); } catch {}
+    list.unshift({
+      id:        'a' + Date.now().toString(36),
+      name:      data.name,
+      phone:     data.phone,
+      email:     data.email     || '',
+      service:   data.service   || '',
+      date:      data.preferred_date || '',
+      time:      data.preferred_time || '',
+      message:   data.message,
+      status:    'pending',
+      submitted: new Date().toISOString()
+    });
+    localStorage.setItem(APPT_KEY, JSON.stringify(list));
+  }
+
+  form.addEventListener('submit', async function(e) {
     e.preventDefault();
 
+    // Validate required fields (skip hidden _gotcha)
     const fields = form.querySelectorAll('input[required], textarea[required]');
     let allValid = true;
-
-    fields.forEach(field => {
-      if (!validateField(field)) allValid = false;
-    });
-
+    fields.forEach(f => { if (!validateField(f)) allValid = false; });
     if (!allValid) {
-      const firstError = form.querySelector('.has-error input, .has-error textarea');
-      if (firstError) firstError.focus();
+      const firstErr = form.querySelector('.has-error input, .has-error textarea');
+      if (firstErr) firstErr.focus();
       return;
     }
 
-    // Simulate form submission (replace with real endpoint as needed)
-    const submitBtn = form.querySelector('[type="submit"]');
     submitBtn.textContent = 'Enviando…';
-    submitBtn.disabled = true;
+    submitBtn.disabled    = true;
 
-    setTimeout(() => {
-      form.reset();
-      form.querySelectorAll('.form-group').forEach(g => g.classList.remove('has-error'));
-      formSuccess.hidden = false;
-      submitBtn.textContent = 'Enviar solicitud';
-      submitBtn.disabled = false;
+    const formData = new FormData(form);
+    const payload  = Object.fromEntries(formData.entries());
 
-      setTimeout(() => { formSuccess.hidden = true; }, 6000);
-    }, 1200);
+    // Always save locally so admin can see it regardless of Formspree
+    saveAppointmentLocally(payload);
+
+    // Check if Formspree is configured
+    const action = form.getAttribute('action') || '';
+    const hasFormspree = action.includes('formspree.io') && !action.includes('YOUR_FORM_ID');
+
+    if (hasFormspree) {
+      try {
+        const res = await fetch(action, {
+          method:  'POST',
+          headers: { 'Accept': 'application/json' },
+          body:    formData
+        });
+
+        if (!res.ok) throw new Error('Formspree error ' + res.status);
+      } catch (err) {
+        console.warn('Formspree submission failed, saved locally only.', err);
+      }
+    }
+
+    form.reset();
+    form.querySelectorAll('.form-group').forEach(g => g.classList.remove('has-error'));
+    formSuccess.hidden    = false;
+    submitBtn.textContent = 'Enviar solicitud';
+    submitBtn.disabled    = false;
+    setTimeout(() => { formSuccess.hidden = true; }, 7000);
   });
 
   // ── FOOTER YEAR ──
