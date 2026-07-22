@@ -441,3 +441,189 @@
   document.head.appendChild(style);
 
 })();
+
+  // ── MODERN DATE/TIME PICKER WITH HAPTIC FEEDBACK ──
+  function initModernDateTimePicker() {
+    const dateInput = document.getElementById('preferred-date');
+    const timeSlots = document.querySelectorAll('.time-slot');
+    const hiddenTimeInput = document.getElementById('preferred-time');
+    const selectedTimeValue = document.querySelector('.selected-time-value');
+    const selectedTimeDisplay = document.querySelector('.selected-time-display');
+
+    // Haptic feedback function
+    function triggerHapticFeedback(element, intensity = 'light') {
+      // Add haptic animation class
+      element.classList.add('haptic-feedback');
+      setTimeout(() => {
+        element.classList.remove('haptic-feedback');
+      }, 200);
+
+      // Try to trigger device haptic feedback
+      if ('vibrate' in navigator) {
+        const patterns = {
+          light: [10],
+          medium: [20],
+          strong: [30, 10, 30]
+        };
+        navigator.vibrate(patterns[intensity] || patterns.light);
+      }
+
+      // iOS haptic feedback (requires user gesture)
+      if (window.DeviceMotionEvent && typeof DeviceMotionEvent.requestPermission === 'function') {
+        // This would require permission, keeping as fallback
+        console.log('iOS haptic feedback triggered');
+      }
+    }
+
+    // Set minimum date to today
+    if (dateInput) {
+      const today = new Date();
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      
+      const minDate = tomorrow.toISOString().split('T')[0];
+      dateInput.setAttribute('min', minDate);
+
+      // Add haptic feedback to date input
+      dateInput.addEventListener('change', function() {
+        triggerHapticFeedback(this, 'light');
+        
+        // Add selection animation
+        this.style.transform = 'scale(1.02)';
+        setTimeout(() => {
+          this.style.transform = '';
+        }, 150);
+      });
+
+      dateInput.addEventListener('focus', function() {
+        triggerHapticFeedback(this, 'light');
+      });
+    }
+
+    // Handle time slot selection
+    timeSlots.forEach(slot => {
+      slot.addEventListener('click', function() {
+        // Remove previous selection
+        timeSlots.forEach(s => s.classList.remove('selected'));
+        
+        // Add selection to clicked slot
+        this.classList.add('selected');
+        
+        // Update hidden input and display
+        const timeValue = this.dataset.time;
+        const displayValue = this.dataset.display;
+        
+        if (hiddenTimeInput) hiddenTimeInput.value = timeValue;
+        if (selectedTimeValue) selectedTimeValue.textContent = displayValue;
+        if (selectedTimeDisplay) selectedTimeDisplay.classList.add('has-selection');
+
+        // Trigger haptic feedback
+        triggerHapticFeedback(this, 'medium');
+        
+        // Add ripple effect
+        createRippleEffect(this);
+      });
+
+      // Add hover haptic feedback
+      slot.addEventListener('mouseenter', function() {
+        if (window.matchMedia('(hover: hover)').matches) {
+          triggerHapticFeedback(this, 'light');
+        }
+      });
+    });
+
+    // Create ripple effect
+    function createRippleEffect(element) {
+      const ripple = document.createElement('span');
+      ripple.classList.add('ripple');
+      
+      const rect = element.getBoundingClientRect();
+      const size = Math.max(rect.width, rect.height);
+      const x = rect.width / 2;
+      const y = rect.height / 2;
+      
+      ripple.style.width = ripple.style.height = size + 'px';
+      ripple.style.left = (x - size / 2) + 'px';
+      ripple.style.top = (y - size / 2) + 'px';
+      
+      element.appendChild(ripple);
+      
+      setTimeout(() => {
+        if (ripple.parentNode) {
+          ripple.parentNode.removeChild(ripple);
+        }
+      }, 600);
+    }
+
+    // Add ripple CSS if not already present
+    if (!document.querySelector('style[data-ripple]')) {
+      const rippleStyle = document.createElement('style');
+      rippleStyle.setAttribute('data-ripple', 'true');
+      rippleStyle.textContent = `
+        .time-slot {
+          position: relative;
+          overflow: hidden;
+        }
+        .ripple {
+          position: absolute;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.6);
+          transform: scale(0);
+          animation: ripple 0.6s linear;
+          pointer-events: none;
+        }
+        @keyframes ripple {
+          to {
+            transform: scale(4);
+            opacity: 0;
+          }
+        }
+      `;
+      document.head.appendChild(rippleStyle);
+    }
+
+    // Progressive enhancement for touch devices
+    if ('ontouchstart' in window) {
+      timeSlots.forEach(slot => {
+        slot.addEventListener('touchstart', function() {
+          triggerHapticFeedback(this, 'light');
+        });
+      });
+    }
+
+    // Keyboard navigation support
+    timeSlots.forEach((slot, index) => {
+      slot.addEventListener('keydown', function(e) {
+        let nextIndex;
+        
+        switch(e.key) {
+          case 'ArrowRight':
+          case 'ArrowDown':
+            e.preventDefault();
+            nextIndex = (index + 1) % timeSlots.length;
+            timeSlots[nextIndex].focus();
+            triggerHapticFeedback(timeSlots[nextIndex], 'light');
+            break;
+          case 'ArrowLeft':
+          case 'ArrowUp':
+            e.preventDefault();
+            nextIndex = (index - 1 + timeSlots.length) % timeSlots.length;
+            timeSlots[nextIndex].focus();
+            triggerHapticFeedback(timeSlots[nextIndex], 'light');
+            break;
+          case 'Enter':
+          case ' ':
+            e.preventDefault();
+            this.click();
+            break;
+        }
+      });
+    });
+  }
+
+  // Initialize when DOM is loaded
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initModernDateTimePicker);
+  } else {
+    initModernDateTimePicker();
+  }
