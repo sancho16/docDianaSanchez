@@ -171,31 +171,40 @@
 
     card.innerHTML = `
       <div class="adm-review-card__body" style="flex:1">
-        <div class="adm-appt-header">
-          <div class="adm-appt-who">
-            <span class="adm-appt-name">${esc(appt.name)}</span>
-            <span class="adm-appt-status-badge" style="background:${statusColors[status]}22;color:${statusColors[status]};border:1px solid ${statusColors[status]}44">
-              ${statusLabels[status]}
-            </span>
+        <div class="adm-appt-front">
+          <div class="adm-appt-header">
+            <div class="adm-appt-who">
+              <span class="adm-appt-name">${esc(appt.name)}</span>
+              <span class="adm-appt-status-badge" style="background:${statusColors[status]}22;color:${statusColors[status]};border:1px solid ${statusColors[status]}44">
+                ${statusLabels[status]}
+              </span>
+            </div>
+            <span class="adm-appt-submitted">${submittedDisplay ? 'Enviado: ' + submittedDisplay : ''}</span>
           </div>
-          <span class="adm-appt-submitted">${submittedDisplay ? 'Enviado: ' + submittedDisplay : ''}</span>
-        </div>
 
-        <div class="adm-appt-details">
-          <div class="adm-appt-detail">
-            <span class="adm-appt-detail-icon">📅</span>
-            <span>${dateDisplay}</span>
+          <div class="adm-appt-details">
+            <div class="adm-appt-detail">
+              <span class="adm-appt-detail-icon">📅</span>
+              <span>${dateDisplay}</span>
+            </div>
+            <div class="adm-appt-detail">
+              <span class="adm-appt-detail-icon">🕐</span>
+              <span>${timeDisplay}</span>
+            </div>
+            ${appt.phone ? `<div class="adm-appt-detail"><span class="adm-appt-detail-icon">📞</span><span>${esc(appt.phone)}</span></div>` : ''}
+            ${appt.email ? `<div class="adm-appt-detail"><span class="adm-appt-detail-icon">✉️</span><span>${esc(appt.email)}</span></div>` : ''}
+            ${appt.service ? `<div class="adm-appt-detail"><span class="adm-appt-detail-icon">🩺</span><span>${esc(appt.service)}</span></div>` : ''}
           </div>
-          <div class="adm-appt-detail">
-            <span class="adm-appt-detail-icon">🕐</span>
-            <span>${timeDisplay}</span>
-          </div>
-          ${appt.phone ? `<div class="adm-appt-detail"><span class="adm-appt-detail-icon">📞</span><a href="tel:${esc(appt.phone)}">${esc(appt.phone)}</a></div>` : ''}
-          ${appt.email ? `<div class="adm-appt-detail"><span class="adm-appt-detail-icon">✉️</span><a href="mailto:${esc(appt.email)}">${esc(appt.email)}</a></div>` : ''}
-          ${appt.service ? `<div class="adm-appt-detail"><span class="adm-appt-detail-icon">🩺</span><span>${esc(appt.service)}</span></div>` : ''}
+          ${appt.message ? `<p class=\"adm-appt-message\">\"${esc(appt.message)}\"</p>` : ''}
         </div>
-
-        ${appt.message ? `<p class="adm-appt-message">"${esc(appt.message)}"</p>` : ''}
+        <div class="adm-appt-back" aria-hidden="true">
+          <div class="adm-appt-back-title">Detalle rápido</div>
+          <div class="adm-appt-back-row"><span class="adm-appt-back-icon">👤</span><span>${esc(appt.name)}</span></div>
+          ${appt.phone ? `<div class=\"adm-appt-back-row\"><span class=\"adm-appt-back-icon\">📞</span><a href=\"tel:${esc(appt.phone)}\">${esc(appt.phone)}</a></div>` : ''}
+          ${appt.email ? `<div class=\"adm-appt-back-row\"><span class=\"adm-appt-back-icon\">✉️</span><a href=\"mailto:${esc(appt.email)}\">${esc(appt.email)}</a></div>` : ''}
+          ${appt.service ? `<div class=\"adm-appt-back-row\"><span class=\"adm-appt-back-icon\">🩺</span><span>${esc(appt.service)}</span></div>` : ''}
+          ${appt.message ? `<div class=\"adm-appt-detail-note\">Nota: ${esc(appt.message)}</div>` : ''}
+        </div>
       </div>
 
       <div class="adm-review-card__actions adm-appt-actions">
@@ -223,6 +232,25 @@
       btn.addEventListener('click', handleApptAction);
     });
 
+    card.addEventListener('click', function (e) {
+      if (e.target.closest('a') || e.target.closest('button') || e.target.closest('[data-action]')) return;
+
+      const card = e.currentTarget;
+
+      if (card._singleTimer) {
+        clearTimeout(card._singleTimer);
+        card._singleTimer = null;
+        handleCardFlip(e);
+        return;
+      }
+
+      card._singleTimer = setTimeout(() => {
+        card._singleTimer = null;
+        const appt = appointments.find(a => a.id === card.dataset.id);
+        if (appt) openDetailModal(appt);
+      }, 260);
+    });
+
     return card;
   }
 
@@ -232,6 +260,130 @@
     const ampm = h >= 12 ? 'pm' : 'am';
     const h12  = h % 12 || 12;
     return `${h12}:${String(m).padStart(2,'0')} ${ampm}`;
+  }
+
+  /* ══════════════════════════════════════════════
+     CARD FLIP + DETAIL OPEN
+  ══════════════════════════════════════════════ */
+  function handleCardOpen(e) {
+    /* Only trigger when the click target is the card itself or a non-interactive child,
+       not when the user clicked an <a>, <button>, or [data-action] element */
+    const target = e.target;
+    if (target.closest('a') || target.closest('button') || target.closest('[data-action]')) return;
+
+    const card = e.currentTarget;
+    const appt = appointments.find(a => a.id === card.dataset.id);
+    if (!appt) return;
+    openDetailModal(appt);
+  }
+
+  function openDetailModal(appt) {
+    closeDetailModal();
+    const overlay = document.createElement('div');
+    overlay.className = 'adm-appt-detail-overlay';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-label', 'Detalle de cita');
+
+    const statusLabels = { pending: 'Pendiente', confirmed: 'Confirmada', cancelled: 'Cancelada' };
+    const statusColors = { pending: '#f39c12', confirmed: '#2ecc71', cancelled: '#e74c3c' };
+    const status = appt.status || 'pending';
+
+    const dateDisplay = appt.date
+      ? new Date(appt.date + 'T12:00:00').toLocaleDateString('es-CR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+      : 'Fecha no especificada';
+    const timeDisplay = appt.time ? formatTime(appt.time) : 'Hora no especificada';
+
+    overlay.innerHTML = `
+      <div class="adm-appt-detail-card">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+          <strong style="font-family:var(--serif);font-size:1.15rem;color:var(--white)">${esc(appt.name)}</strong>
+          <span style="padding:3px 10px;border-radius:100px;font-size:.72rem;font-weight:600;background:${statusColors[status]}22;color:${statusColors[status]};border:1px solid ${statusColors[status]}44">
+            ${statusLabels[status]}
+          </span>
+        </div>
+        <div class="adm-appt-detail-row"><span style="font-size:1rem">📅</span><span>${dateDisplay}</span></div>
+        <div class="adm-appt-detail-row"><span style="font-size:1rem">🕐</span><span>${timeDisplay}</span></div>
+        ${appt.phone ? `<div class="adm-appt-detail-row"><span style="font-size:1rem">📞</span><a href="tel:${esc(appt.phone)}">${esc(appt.phone)}</a></div>` : ''}
+        ${appt.email ? `<div class="adm-appt-detail-row"><span style="font-size:1rem">✉️</span><a href="mailto:${esc(appt.email)}">${esc(appt.email)}</a></div>` : ''}
+        ${appt.service ? `<div class="adm-appt-detail-row"><span style="font-size:1rem">🩺</span><span>${esc(appt.service)}</span></div>` : ''}
+        ${appt.message ? `<div class="adm-appt-detail-note">"${esc(appt.message)}"</div>` : ''}
+        <div class="adm-appt-detail-actions adm-appt-actions" style="margin-top:18px"></div>
+        <button class="adm-btn adm-btn--ghost adm-btn--sm adm-appt-detail-close" style="margin-top:14px">Cerrar</button>
+      </div>
+    `;
+
+    const detailActions = overlay.querySelector('.adm-appt-detail-actions');
+    ['confirm','cancel-appt','calendar','delete-appt'].forEach(action => {
+      const btn = buildApptDetailButton(action, appt);
+      if (btn) detailActions.appendChild(btn);
+    });
+
+    const closeBtn = overlay.querySelector('.adm-appt-detail-close');
+    closeBtn.addEventListener('click', closeDetailModal);
+    detailActions.addEventListener('click', function (ev) {
+      const actionBtn = ev.target.closest('[data-action]');
+      if (!actionBtn) return;
+      handleApptAction({ currentTarget: actionBtn });
+      setTimeout(() => { if (!document.querySelector('.adm-appt-detail-overlay')) renderAppointments(); }, 280);
+    });
+
+    overlay.addEventListener('click', function (ev) {
+      if (ev.target === overlay) closeDetailModal();
+    });
+    document.body.appendChild(overlay);
+    document.body.style.overflow = 'hidden';
+  }
+
+  function buildApptDetailButton(action, appt) {
+    if (action === 'confirm' && appt.status === 'pending') {
+      const btn = document.createElement('button');
+      btn.className = 'adm-btn adm-btn--green adm-btn--sm';
+      btn.setAttribute('data-action', 'confirm');
+      btn.setAttribute('data-id', appt.id);
+      btn.textContent = '✔ Confirmar';
+      return btn;
+    }
+    if (action === 'cancel-appt' && (appt.status === 'pending' || appt.status === 'confirmed')) {
+      const btn = document.createElement('button');
+      btn.className = 'adm-btn adm-btn--danger adm-btn--sm';
+      btn.setAttribute('data-action', 'cancel-appt');
+      btn.setAttribute('data-id', appt.id);
+      btn.textContent = '✕ Cancelar';
+      return btn;
+    }
+    if (action === 'calendar') {
+      const btn = document.createElement('button');
+      btn.className = 'adm-btn adm-btn--ghost adm-btn--sm';
+      btn.setAttribute('data-action', 'calendar');
+      btn.setAttribute('data-id', appt.id);
+      btn.innerHTML = `📅 .ics`;
+      return btn;
+    }
+    if (action === 'delete-appt') {
+      const btn = document.createElement('button');
+      btn.className = 'adm-btn adm-btn--danger adm-btn--sm';
+      btn.setAttribute('data-action', 'delete-appt');
+      btn.setAttribute('data-id', appt.id);
+      btn.textContent = '🗑';
+      return btn;
+    }
+    return null;
+  }
+
+  function closeDetailModal() {
+    const overlay = document.querySelector('.adm-appt-detail-overlay');
+    if (!overlay) return;
+    overlay.remove();
+    document.body.style.overflow = '';
+  }
+
+  function handleCardFlip(e) {
+    const card = e.currentTarget;
+    const isFlipped = card.classList.contains('adm-appt-card--flipped');
+    /* Close any modal before flipping */
+    closeDetailModal();
+    card.classList.toggle('adm-appt-card--flipped', !isFlipped);
   }
 
   /* ══════════════════════════════════════════════
