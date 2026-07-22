@@ -256,12 +256,8 @@
       }
     }
 
-    form.reset();
-    form.querySelectorAll('.form-group').forEach(g => g.classList.remove('has-error'));
-    formSuccess.hidden    = false;
-    submitBtn.textContent = 'Enviar solicitud';
-    submitBtn.disabled    = false;
-    setTimeout(() => { formSuccess.hidden = true; }, 7000);
+    // Redirect to success page
+    window.location.href = 'success.html';
   });
 
   // ── FOOTER YEAR ──

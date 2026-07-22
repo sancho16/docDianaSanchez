@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>¡Solicitud enviada! · Dra. Diana Sánchez</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=2" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #07272a 0%, #0c3b3f 50%, #0f4d52 100%);
+      color: #eafcfb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+    body::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle, rgba(13, 148, 136, 0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .card {
+      background: rgba(15, 77, 82, 0.6);
+      backdrop-filter: blur(40px) saturate(180%);
+      -webkit-backdrop-filter: blur(40px) saturate(180%);
+      border: 1px solid rgba(95, 227, 214, 0.1);
+      border-radius: 24px;
+      padding: 3rem 2.5rem;
+      max-width: 520px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4),
+                  0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+      position: relative;
+      z-index: 1;
+      animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .icon {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 1.5rem;
+      background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      animation: pulse 2s ease-in-out infinite;
+      box-shadow: 0 0 0 8px rgba(13, 148, 136, 0.15),
+                  0 8px 20px rgba(13, 148, 136, 0.3);
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 0.8rem;
+      line-height: 1.2;
+    }
+    .subtitle {
+      font-size: 1.05rem;
+      color: #5fe3d6;
+      margin-bottom: 1rem;
+      font-weight: 500;
+    }
+    p {
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: #9fe9e1;
+      margin-bottom: 2rem;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.9rem 1.8rem;
+      background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+      color: #ffffff;
+      text-decoration: none;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(13, 148, 136, 0.4);
+    }
+    .btn:active {
+      transform: translateY(0);
+    }
+    .cross {
+      position: absolute;
+      top: 1.5rem;
+      left: 1.5rem;
+      font-size: 1.5rem;
+      color: #5fe3d6;
+      opacity: 0.4;
+    }
+    @media (max-width: 640px) {
+      .card { padding: 2.5rem 2rem; }
+      h1 { font-size: 1.6rem; }
+      .subtitle { font-size: 0.95rem; }
+      p { font-size: 0.9rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <span class="cross" aria-hidden="true">✚</span>
+    <div class="icon">✓</div>
+    <h1>¡Solicitud enviada!</h1>
+    <p class="subtitle">Hemos recibido su solicitud de cita</p>
+    <p>
+      Gracias por contactarnos. Le confirmaremos su cita por correo electrónico
+      o teléfono en las próximas horas. Si es urgente, puede escribirnos por WhatsApp.
+    </p>
+    <a href="/" class="btn">
+      <svg viewBox="0 0 20 20" fill="none" width="18" height="18" aria-hidden="true">
+        <path d="M15 10H5M9 6l-4 4 4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Volver al inicio
+    </a>
+  </div>
+</body>
+</html>
