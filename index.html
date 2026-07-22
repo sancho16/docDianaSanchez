@@ -66,7 +66,7 @@
           <span data-i18n="hero.badge">Available for consultations · Costa Rica</span>
         </div>
         <h1 class="hero__title">
-          Dr. Diana Carolina<br/>
+          <span data-i18n="hero.title.prefix">Dr.</span> Diana Carolina<br/>
           <span class="text-red">Sánchez Dávila</span>
         </h1>
         <p class="hero__subtitle" data-i18n="hero.subtitle">Surgeon &amp; General Physician · Comprehensive Care</p>
@@ -147,14 +147,63 @@
         <div class="about__text">
           <span class="section__label text-red" data-i18n="about.label">About Me</span>
           <h2 class="section__title" id="about-title" data-i18n="about.title">Your health, my calling</h2>
-          <p data-i18n="about.p1">I am Dr. Diana Carolina Sánchez Dávila, a surgeon and general physician with over 7 years of experience providing comprehensive care to patients of all ages in Costa Rica. My approach combines scientific rigor with a human and personal touch.</p>
-          <p data-i18n="about.p2">I graduated from the <a href="https://uia.ac.cr" target="_blank" rel="noopener noreferrer" class="about__link">Universidad Internacional de las Américas (UIA)</a>, one of Costa Rica's leading private universities committed to academic excellence, and have dedicated my career to general surgery, preventive medicine, and chronic disease management.</p>
-          <ul class="about__credentials" aria-label="Credentials">
-            <li><span class="cred-icon" aria-hidden="true">✚</span><span data-i18n="about.cred1">Surgeon – Medical College of Costa Rica</span></li>
-            <li><span class="cred-icon" aria-hidden="true">✚</span><span data-i18n="about.cred2">Graduate – <a href="https://uia.ac.cr" target="_blank" rel="noopener noreferrer" class="about__link">Universidad Internacional de las Américas (UIA)</a></span></li>
-            <li><span class="cred-icon" aria-hidden="true">✚</span><span data-i18n="about.cred3">Specialty in General Surgery &amp; Preventive Medicine</span></li>
-            <li><span class="cred-icon" aria-hidden="true">✚</span><span data-i18n="about.cred4">7+ years of experience in Costa Rica</span></li>
+          <p data-i18n="about.p1">I am Dr. Diana Carolina Sánchez Dávila, a general practitioner with over 6 years of experience providing comprehensive care to patients of all ages. My approach combines scientific rigor with a human and personal touch, specializing in primary care, home visits, and health education.</p>
+          <p data-i18n="about.p2">I graduated with my Doctor of Medicine (MD) degree from <a href="https://uaca.ac.cr" target="_blank" rel="noopener noreferrer" class="about__link">Universidad Autónoma de Centro América (UACA)</a>, and have built a diverse career spanning clinical practice, medical research, and telemedicine across Costa Rica and internationally.</p>
+          
+          <div class="about__experience">
+            <h3 class="experience__title" data-i18n="about.experience.title">Professional Experience</h3>
+            <div class="experience__list">
+              <div class="experience__item">
+                <div class="experience__header">
+                  <h4 data-i18n="about.exp1.title">General Practitioner</h4>
+                  <span class="experience__duration" data-i18n="about.exp1.duration">2021 - Present</span>
+                </div>
+                <div class="experience__details">
+                  <p class="experience__company" data-i18n="about.exp1.company">Clínica Herradura, Los Sueños Resort</p>
+                  <p class="experience__description" data-i18n="about.exp1.desc">Primary care and emergency medicine in resort setting</p>
+                </div>
+              </div>
+              
+              <div class="experience__item">
+                <div class="experience__header">
+                  <h4 data-i18n="about.exp2.title">MRA Researcher</h4>
+                  <span class="experience__duration" data-i18n="about.exp2.duration">2021 - Present</span>
+                </div>
+                <div class="experience__details">
+                  <p class="experience__company" data-i18n="about.exp2.company">PMAcare (Remote - United States)</p>
+                  <p class="experience__description" data-i18n="about.exp2.desc">Medical research and coding for primary care initiatives</p>
+                </div>
+              </div>
+              
+              <div class="experience__item">
+                <div class="experience__header">
+                  <h4 data-i18n="about.exp3.title">General Practitioner</h4>
+                  <span class="experience__duration" data-i18n="about.exp3.duration">2020 - Present</span>
+                </div>
+                <div class="experience__details">
+                  <p class="experience__company" data-i18n="about.exp3.company">Addiuva Enterprises</p>
+                  <p class="experience__description" data-i18n="about.exp3.desc">Home visits and health education programs</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <ul class="about__credentials" aria-label="Education & Credentials">
+            <li><span class="cred-icon" aria-hidden="true">🎓</span><span data-i18n="about.cred1">Doctor of Medicine (MD) – Universidad Autónoma de Centro América</span></li>
+            <li><span class="cred-icon" aria-hidden="true">🏥</span><span data-i18n="about.cred2">General Practitioner – Medical College of Costa Rica</span></li>
+            <li><span class="cred-icon" aria-hidden="true">🌟</span><span data-i18n="about.cred3">Specialties: Primary Care, Home Visits, Health Education</span></li>
+            <li><span class="cred-icon" aria-hidden="true">📍</span><span data-i18n="about.cred4">6+ years experience in Costa Rica & International</span></li>
           </ul>
+          
+          <div class="about__social">
+            <a href="https://www.linkedin.com/in/diana-sanchez-davila-41392a1a6" target="_blank" rel="noopener noreferrer" class="about__social-link" aria-label="LinkedIn Profile">
+              <svg class="social-icon" viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
+                <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+              </svg>
+              <span data-i18n="about.linkedin">LinkedIn Profile</span>
+            </a>
+          </div>
+          
           <a href="#contacto" class="btn btn--primary" data-i18n="about.cta">Request Consultation</a>
         </div>
       </div>
