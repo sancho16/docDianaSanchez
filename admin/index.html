@@ -59,7 +59,11 @@
           </div>
         </div>
         <nav class="adm-nav">
-          <button class="adm-nav__item adm-nav__item--active" data-tab="pending" aria-current="page">
+          <button class="adm-nav__item adm-nav__item--active" data-tab="dashboard" aria-current="page">
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect x="3" y="3" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="11" y="3" width="6" height="4" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="3" y="11" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="11" y="9" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.5"/></svg>
+            Dashboard
+          </button>
+          <button class="adm-nav__item" data-tab="pending">
             <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.5"/><path d="M10 6v4l3 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
             Pendientes
             <span class="adm-badge" id="pending-badge">0</span>
@@ -102,8 +106,8 @@
             <span></span><span></span><span></span>
           </button>
           <div>
-            <h1 class="adm-header__title" id="tab-title">Reseñas pendientes</h1>
-            <p class="adm-header__sub" id="tab-sub">Apruebe o rechace las reseñas enviadas por pacientes</p>
+            <h1 class="adm-header__title" id="tab-title">Dashboard</h1>
+            <p class="adm-header__sub" id="tab-sub">Overview of your medical practice</p>
           </div>
         </div>
         <div class="adm-header__right">
@@ -113,6 +117,120 @@
           </button>
         </div>
       </header>
+
+      <!-- ── TAB: DASHBOARD ── -->
+      <section class="adm-tab" id="tab-dashboard" aria-label="Dashboard">
+        <div class="adm-dashboard">
+          <!-- Stats Cards -->
+          <div class="adm-stats-grid">
+            <div class="adm-stat-card adm-stat-card--primary">
+              <div class="adm-stat-card__icon">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2"/><circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/><path d="m22 21-3-3m0 0a5.5 5.5 0 1 0-7.78-7.78 5.5 5.5 0 0 0 7.78 7.78Z" stroke="currentColor" stroke-width="2"/></svg>
+              </div>
+              <div class="adm-stat-card__content">
+                <div class="adm-stat-card__value" id="total-patients">0</div>
+                <div class="adm-stat-card__label">Total Patients</div>
+                <div class="adm-stat-card__change" id="patients-change">+0% from last month</div>
+              </div>
+            </div>
+            
+            <div class="adm-stat-card adm-stat-card--success">
+              <div class="adm-stat-card__icon">
+                <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" stroke-width="2"/><path d="M7 2v4M17 2v4M3 10h18" stroke="currentColor" stroke-width="2"/></svg>
+              </div>
+              <div class="adm-stat-card__content">
+                <div class="adm-stat-card__value" id="total-appointments">0</div>
+                <div class="adm-stat-card__label">Appointments</div>
+                <div class="adm-stat-card__change" id="appointments-change">+0% this week</div>
+              </div>
+            </div>
+            
+            <div class="adm-stat-card adm-stat-card--warning">
+              <div class="adm-stat-card__icon">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="currentColor" stroke-width="2"/></svg>
+              </div>
+              <div class="adm-stat-card__content">
+                <div class="adm-stat-card__value" id="total-reviews">0</div>
+                <div class="adm-stat-card__label">Reviews</div>
+                <div class="adm-stat-card__change" id="reviews-change">+0 pending approval</div>
+              </div>
+            </div>
+            
+            <div class="adm-stat-card adm-stat-card--info">
+              <div class="adm-stat-card__icon">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M3 13h8V3H3v10z" stroke="currentColor" stroke-width="2"/><path d="M13 21h8V11h-8v10z" stroke="currentColor" stroke-width="2"/><path d="M13 3h8v6h-8V3z" stroke="currentColor" stroke-width="2"/><path d="M3 21h8v-6H3v6z" stroke="currentColor" stroke-width="2"/></svg>
+              </div>
+              <div class="adm-stat-card__content">
+                <div class="adm-stat-card__value" id="avg-rating">0.0</div>
+                <div class="adm-stat-card__label">Avg Rating</div>
+                <div class="adm-stat-card__change" id="rating-change">Based on all reviews</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Charts Section -->
+          <div class="adm-charts-grid">
+            <!-- Appointments Chart -->
+            <div class="adm-chart-card">
+              <div class="adm-chart-card__header">
+                <h3>Appointments Overview</h3>
+                <div class="adm-chart-card__period">
+                  <select id="appointments-period" class="adm-select">
+                    <option value="7">Last 7 days</option>
+                    <option value="30">Last 30 days</option>
+                    <option value="90">Last 90 days</option>
+                  </select>
+                </div>
+              </div>
+              <div class="adm-chart-container">
+                <canvas id="appointments-chart" width="400" height="200"></canvas>
+              </div>
+            </div>
+
+            <!-- Status Distribution -->
+            <div class="adm-chart-card">
+              <div class="adm-chart-card__header">
+                <h3>Appointment Status</h3>
+              </div>
+              <div class="adm-chart-container">
+                <canvas id="status-chart" width="300" height="200"></canvas>
+              </div>
+              <div class="adm-chart-legend" id="status-legend"></div>
+            </div>
+
+            <!-- Reviews Trend -->
+            <div class="adm-chart-card">
+              <div class="adm-chart-card__header">
+                <h3>Reviews Trend</h3>
+              </div>
+              <div class="adm-chart-container">
+                <canvas id="reviews-chart" width="400" height="200"></canvas>
+              </div>
+            </div>
+
+            <!-- Service Popularity -->
+            <div class="adm-chart-card">
+              <div class="adm-chart-card__header">
+                <h3>Popular Services</h3>
+              </div>
+              <div class="adm-service-bars" id="service-bars">
+                <!-- Dynamic service bars will be inserted here -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Activity -->
+          <div class="adm-activity-card">
+            <div class="adm-activity-card__header">
+              <h3>Recent Activity</h3>
+              <button class="adm-btn adm-btn--ghost adm-btn--sm" id="refresh-activity">Refresh</button>
+            </div>
+            <div class="adm-activity-list" id="activity-list">
+              <!-- Dynamic activity items will be inserted here -->
+            </div>
+          </div>
+        </div>
+      </section>
 
       <!-- ── TAB: PENDING ── -->
       <section class="adm-tab" id="tab-pending" aria-label="Reseñas pendientes">

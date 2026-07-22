@@ -49,6 +49,424 @@ pre, code { font-family: 'Courier New', monospace; }
 .adm-btn--green  { background: rgba(46,204,113,0.15); color: var(--green); border: 1px solid rgba(46,204,113,0.3); }
 .adm-btn--green:hover { background: rgba(46,204,113,0.25); }
 .adm-btn--danger { background: rgba(231,76,60,0.12); color: var(--red-light); border: 1px solid rgba(231,76,60,0.25); }
+
+/* ── MEDICAL RECORDS INTERACTION ── */
+.adm-appt-card.medical-interactive {
+  position: relative;
+  transition: var(--transition), box-shadow var(--transition), transform var(--transition);
+}
+
+.adm-appt-card.medical-interactive .adm-review-card__body {
+  cursor: pointer;
+  position: relative;
+}
+
+.adm-appt-card.medical-interactive::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, transparent, rgba(46,204,113,0.3), transparent);
+  border-radius: var(--radius);
+  opacity: 0;
+  transition: var(--transition);
+  z-index: -1;
+  pointer-events: none;
+}
+
+.adm-appt-card.medical-interactive:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.3), 0 4px 10px rgba(46,204,113,0.2);
+}
+
+.adm-appt-card.medical-interactive:hover::before {
+  opacity: 1;
+}
+
+.adm-appt-card.medical-interactive::after {
+  content: '🩺 Double-click/long-press for medical records';
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  font-size: 0.7rem;
+  color: rgba(46,204,113,0.9);
+  background: rgba(46,204,113,0.1);
+  padding: 6px 10px;
+  border-radius: 6px;
+  opacity: 0;
+  transition: var(--transition);
+  pointer-events: none;
+  font-weight: 600;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(46,204,113,0.2);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  z-index: 10;
+}
+
+.adm-appt-card.medical-interactive:hover::after {
+  opacity: 1;
+}
+
+.adm-appt-card.medical-interactive .adm-review-card__body:hover {
+  background: rgba(46,204,113,0.05);
+}
+
+/* Active press state */
+.adm-appt-card.medical-interactive .adm-review-card__body:active {
+  transform: scale(0.98);
+  background: rgba(46,204,113,0.1);
+}
+
+/* ── DASHBOARD ── */
+.adm-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.adm-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.adm-stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  position: relative;
+  overflow: hidden;
+  transition: var(--transition);
+}
+
+.adm-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+}
+
+.adm-stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--red);
+  transition: var(--transition);
+}
+
+.adm-stat-card--primary::before { background: linear-gradient(90deg, #3498db, #2980b9); }
+.adm-stat-card--success::before { background: linear-gradient(90deg, #2ecc71, #27ae60); }
+.adm-stat-card--warning::before { background: linear-gradient(90deg, #f39c12, #e67e22); }
+.adm-stat-card--info::before { background: linear-gradient(90deg, #9b59b6, #8e44ad); }
+
+.adm-stat-card__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.1);
+  flex-shrink: 0;
+}
+
+.adm-stat-card__icon svg {
+  width: 24px;
+  height: 24px;
+  color: var(--off-white);
+}
+
+.adm-stat-card__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.adm-stat-card__value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--white);
+  line-height: 1;
+  margin-bottom: 0.25rem;
+}
+
+.adm-stat-card__label {
+  font-size: 0.875rem;
+  color: var(--muted);
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.adm-stat-card__change {
+  font-size: 0.75rem;
+  color: var(--green);
+  font-weight: 500;
+}
+
+/* Charts Grid */
+.adm-charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 1.5rem;
+}
+
+.adm-chart-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  transition: var(--transition);
+}
+
+.adm-chart-card:hover {
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.adm-chart-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.adm-chart-card__header h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--white);
+  margin: 0;
+}
+
+.adm-select {
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--off-white);
+  font-size: 0.875rem;
+  padding: 0.5rem;
+  min-width: 120px;
+}
+
+.adm-chart-container {
+  width: 100%;
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin: 1rem 0;
+}
+
+.adm-chart-container canvas {
+  max-width: 100%;
+  max-height: 100%;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+/* Chart Legend */
+.adm-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.adm-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.adm-legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
+
+/* Service Bars */
+.adm-service-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.adm-service-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.adm-service-bar__label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.875rem;
+}
+
+.adm-service-bar__label > span:first-child {
+  color: var(--off-white);
+  font-weight: 500;
+}
+
+.adm-service-bar__count {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.adm-service-bar__progress {
+  width: 100%;
+  height: 8px;
+  background: var(--bg-3);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.adm-service-bar__fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--red), var(--red-light));
+  border-radius: 4px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Activity Card */
+.adm-activity-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+}
+
+.adm-activity-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.adm-activity-card__header h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--white);
+  margin: 0;
+}
+
+.adm-activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.adm-activity-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: var(--bg-3);
+  transition: var(--transition);
+}
+
+.adm-activity-item:hover {
+  background: rgba(255,255,255,0.05);
+}
+
+.adm-activity-item__icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.1);
+  border-radius: 8px;
+}
+
+.adm-activity-item__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.adm-activity-item__text {
+  font-size: 0.875rem;
+  color: var(--off-white);
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.adm-activity-item__meta {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.adm-activity-item__time {
+  font-size: 0.75rem;
+  color: var(--muted);
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.adm-empty-chart,
+.adm-activity-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 120px;
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* Responsive Dashboard */
+@media (max-width: 768px) {
+  .adm-stats-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .adm-charts-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .adm-stat-card {
+    padding: 1rem;
+  }
+  
+  .adm-stat-card__icon {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .adm-stat-card__icon svg {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .adm-stat-card__value {
+    font-size: 1.5rem;
+  }
+}
+
+/* Touch feedback */
+@media (hover: none) {
+  .adm-appt-card.medical-interactive::after {
+    content: '🩺 Long-press for medical records';
+  }
+}
 .adm-btn--danger:hover { background: rgba(231,76,60,0.22); }
 .adm-btn--sm { padding: 7px 14px; font-size: 0.8rem; }
 .adm-btn--full { width: 100%; justify-content: center; }
