@@ -23,7 +23,7 @@ const I18N = (function () {
       'nav.open.aria': 'Open menu',
 
       /* ── Hero ── */
-      'hero.title.prefix': 'Dr.',
+      'hero.title':    'Dr. Diana Carolina<br/><span class="text-red">Sánchez Dávila</span>',
       'hero.badge':    'Available for consultations · Costa Rica',
       'hero.subtitle': 'Surgeon & General Physician · Comprehensive Care',
       'hero.desc':     'Professional, empathetic and personalized medical care for you and your family.<br/>In-person and virtual consultations in Costa Rica.',
@@ -44,21 +44,6 @@ const I18N = (function () {
       'about.title':   'Your health, my calling',
       'about.p1':      'I am Dr. Diana Carolina Sánchez Dávila, a general practitioner with over 6 years of experience providing comprehensive care to patients of all ages. My approach combines scientific rigor with a human and personal touch, specializing in primary care, home visits, and health education.',
       'about.p2':      'I graduated with my Doctor of Medicine (MD) degree from <a href="https://uaca.ac.cr" target="_blank" rel="noopener noreferrer" class="about__link">Universidad Autónoma de Centro América (UACA)</a>, and have built a diverse career spanning clinical practice, medical research, and telemedicine across Costa Rica and internationally.',
-      
-      'about.experience.title': 'Professional Experience',
-      'about.exp1.title': 'General Practitioner',
-      'about.exp1.duration': '2021 - Present',
-      'about.exp1.company': 'Clínica Herradura, Los Sueños Resort',
-      'about.exp1.desc': 'Primary care and emergency medicine in resort setting',
-      'about.exp2.title': 'MRA Researcher',
-      'about.exp2.duration': '2021 - Present',
-      'about.exp2.company': 'PMAcare (Remote - United States)',
-      'about.exp2.desc': 'Medical research and coding for primary care initiatives',
-      'about.exp3.title': 'General Practitioner',
-      'about.exp3.duration': '2020 - Present',
-      'about.exp3.company': 'Addiuva Enterprises',
-      'about.exp3.desc': 'Home visits and health education programs',
-      
       'about.cred1':   'Doctor of Medicine (MD) – Universidad Autónoma de Centro América',
       'about.cred2':   'General Practitioner – Medical College of Costa Rica',
       'about.cred3':   'Specialties: Primary Care, Home Visits, Health Education',
@@ -222,7 +207,7 @@ const I18N = (function () {
       'nav.open.aria': 'Abrir menú',
 
       /* ── Hero ── */
-      'hero.title.prefix': 'Dra.',
+      'hero.title':    'Dra. Diana Carolina<br/><span class="text-red">Sánchez Dávila</span>',
       'hero.badge':    'Disponible para consultas · Costa Rica',
       'hero.subtitle': 'Cirujana &amp; Médico General · Atención Integral',
       'hero.desc':     'Atención médica profesional, empática y personalizada para usted y su familia.<br/>Consultas presenciales y virtuales en Costa Rica.',
@@ -243,21 +228,6 @@ const I18N = (function () {
       'about.title':   'Su salud, mi vocación',
       'about.p1':      'Soy la Dra. Diana Carolina Sánchez Dávila, médico general con más de 6 años de experiencia brindando atención integral a pacientes de todas las edades. Mi enfoque combina el rigor científico con un trato humano y cercano, especializándome en atención primaria, visitas domiciliarias y educación en salud.',
       'about.p2':      'Me gradué con el título de Doctora en Medicina (MD) de la <a href="https://uaca.ac.cr" target="_blank" rel="noopener noreferrer" class="about__link">Universidad Autónoma de Centro América (UACA)</a>, y he construido una carrera diversa abarcando práctica clínica, investigación médica y telemedicina en Costa Rica e internacionalmente.',
-      
-      'about.experience.title': 'Experiencia Profesional',
-      'about.exp1.title': 'Médico General',
-      'about.exp1.duration': '2021 - Presente',
-      'about.exp1.company': 'Clínica Herradura, Los Sueños Resort',
-      'about.exp1.desc': 'Atención primaria y medicina de emergencia en entorno turístico',
-      'about.exp2.title': 'Investigadora MRA',
-      'about.exp2.duration': '2021 - Presente',
-      'about.exp2.company': 'PMAcare (Remoto - Estados Unidos)',
-      'about.exp2.desc': 'Investigación médica y codificación para iniciativas de atención primaria',
-      'about.exp3.title': 'Médico General',
-      'about.exp3.duration': '2020 - Presente',
-      'about.exp3.company': 'Addiuva Enterprises',
-      'about.exp3.desc': 'Visitas domiciliarias y programas de educación en salud',
-      
       'about.cred1':   'Doctora en Medicina (MD) – Universidad Autónoma de Centro América',
       'about.cred2':   'Médico General – Colegio de Médicos y Cirujanos de Costa Rica',
       'about.cred3':   'Especialidades: Atención Primaria, Visitas Domiciliarias, Educación en Salud',
