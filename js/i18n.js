@@ -25,7 +25,7 @@ const I18N = (function () {
       /* ── Hero ── */
       'hero.title':    'Dr. Diana Carolina<br/><span class="text-red">Sánchez Dávila</span>',
       'hero.badge':    'Available for consultations · Costa Rica',
-      'hero.subtitle': 'Surgeon & General Physician · Comprehensive Care',
+      'hero.subtitle': 'General Practitioner · Comprehensive Care',
       'hero.desc':     'Professional, empathetic and personalized medical care for you and your family.<br/>In-person and virtual consultations in Costa Rica.',
       'hero.cta1':     'Book Appointment',
       'hero.cta2':     'View Services',
