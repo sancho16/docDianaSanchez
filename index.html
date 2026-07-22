@@ -581,12 +581,12 @@
               <label for="service" data-i18n="form.service">Service</label>
               <select id="service" name="service">
                 <option value="" data-i18n="form.service.ph">Select a service</option>
-                <option value="Consulta General" data-i18n="form.s1">General Consultation</option>
-                <option value="Medicina Preventiva" data-i18n="form.s2">Preventive Medicine</option>
-                <option value="Enfermedades Crónicas" data-i18n="form.s3">Chronic Diseases</option>
-                <option value="Atención Pediátrica" data-i18n="form.s4">Pediatric Care</option>
-                <option value="Consulta Virtual" data-i18n="form.s5">Virtual Consultation</option>
-                <option value="Visita Domiciliaria" data-i18n="form.s6">Home Visit</option>
+                <option value="Vitamin C IV" data-i18n="s1.title">Vitamin C IV</option>
+                <option value="B-Complex IV" data-i18n="s2.title">B-Complex IV</option>
+                <option value="IV Rehydration" data-i18n="s3.title">IV Rehydration</option>
+                <option value="Symptomatic IV" data-i18n="s4.title">Symptomatic IV</option>
+                <option value="Facial Harmonization" data-i18n="s5.title">Facial Harmonization</option>
+                <option value="General Consultation" data-i18n="form.general">General Consultation</option>
               </select>
             </div>
             <div class="form-row">
@@ -594,7 +594,14 @@
                 <label for="preferred-date" data-i18n="form.date">Preferred date</label>
                 <div class="modern-date-wrapper">
                   <input type="date" id="preferred-date" name="preferred_date" min="" autocomplete="off" class="modern-date-input" />
-                  <span class="date-icon">📅</span>
+                  <div class="date-icon-modern">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                      <line x1="16" y1="2" x2="16" y2="6"></line>
+                      <line x1="8" y1="2" x2="8" y2="6"></line>
+                      <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                  </div>
                 </div>
               </div>
               <div class="form-group">

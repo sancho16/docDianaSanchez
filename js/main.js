@@ -442,7 +442,7 @@
 
 })();
 
-  // ── MODERN DATE/TIME PICKER WITH HAPTIC FEEDBACK ──
+  // ── ENHANCED MODERN DATE/TIME PICKER WITH ADVANCED UX ──
   function initModernDateTimePicker() {
     const dateInput = document.getElementById('preferred-date');
     const timeSlots = document.querySelectorAll('.time-slot');
@@ -450,32 +450,75 @@
     const selectedTimeValue = document.querySelector('.selected-time-value');
     const selectedTimeDisplay = document.querySelector('.selected-time-display');
 
-    // Haptic feedback function
-    function triggerHapticFeedback(element, intensity = 'light') {
+    // Enhanced haptic feedback function with different intensities
+    function triggerHapticFeedback(element, intensity = 'light', duration = 150) {
       // Add haptic animation class
       element.classList.add('haptic-feedback');
       setTimeout(() => {
         element.classList.remove('haptic-feedback');
-      }, 200);
+      }, duration);
 
-      // Try to trigger device haptic feedback
-      if ('vibrate' in navigator) {
-        const patterns = {
-          light: [10],
-          medium: [20],
-          strong: [30, 10, 30]
-        };
-        navigator.vibrate(patterns[intensity] || patterns.light);
+      // Device haptic feedback patterns
+      const patterns = {
+        light: [10],
+        medium: [20, 10, 20],
+        strong: [30, 20, 30],
+        success: [10, 10, 20, 10, 30]
+      };
+
+      if ('vibrate' in navigator && patterns[intensity]) {
+        navigator.vibrate(patterns[intensity]);
       }
 
-      // iOS haptic feedback (requires user gesture)
-      if (window.DeviceMotionEvent && typeof DeviceMotionEvent.requestPermission === 'function') {
-        // This would require permission, keeping as fallback
-        console.log('iOS haptic feedback triggered');
+      // Visual feedback pulse
+      const pulse = document.createElement('div');
+      pulse.style.cssText = `
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(13,148,136,0.4) 0%, transparent 70%);
+        pointer-events: none;
+        z-index: 1000;
+        animation: feedbackPulse 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      `;
+      
+      element.style.position = element.style.position || 'relative';
+      element.appendChild(pulse);
+      
+      setTimeout(() => {
+        if (pulse.parentNode) {
+          pulse.parentNode.removeChild(pulse);
+        }
+      }, 600);
+
+      // Add CSS for pulse animation if not present
+      if (!document.querySelector('style[data-feedback-pulse]')) {
+        const style = document.createElement('style');
+        style.setAttribute('data-feedback-pulse', 'true');
+        style.textContent = `
+          @keyframes feedbackPulse {
+            0% {
+              width: 0;
+              height: 0;
+              margin: 0;
+              opacity: 1;
+            }
+            100% {
+              width: 100px;
+              height: 100px;
+              margin: -50px 0 0 -50px;
+              opacity: 0;
+            }
+          }
+        `;
+        document.head.appendChild(style);
       }
     }
 
-    // Set minimum date to today
+    // Enhanced date input functionality
     if (dateInput) {
       const today = new Date();
       const tomorrow = new Date(today);
@@ -484,115 +527,117 @@
       const minDate = tomorrow.toISOString().split('T')[0];
       dateInput.setAttribute('min', minDate);
 
-      // Add haptic feedback to date input
+      // Advanced date input interactions
       dateInput.addEventListener('change', function() {
-        triggerHapticFeedback(this, 'light');
-        
-        // Add selection animation
-        this.style.transform = 'scale(1.02)';
-        setTimeout(() => {
-          this.style.transform = '';
-        }, 150);
+        if (this.value) {
+          triggerHapticFeedback(this, 'medium');
+          
+          // Success animation
+          this.style.transform = 'scale(1.05)';
+          this.style.boxShadow = '0 12px 40px rgba(13,148,136,0.3)';
+          
+          setTimeout(() => {
+            this.style.transform = '';
+            this.style.boxShadow = '';
+          }, 300);
+
+          // Date validation feedback
+          const selectedDate = new Date(this.value);
+          const dayOfWeek = selectedDate.getDay();
+          
+          // Weekend notification (optional)
+          if (dayOfWeek === 0 || dayOfWeek === 6) {
+            showDateFeedback('Weekend selected - Limited availability may apply', 'info');
+          }
+        }
       });
 
       dateInput.addEventListener('focus', function() {
         triggerHapticFeedback(this, 'light');
-      });
-    }
-
-    // Handle time slot selection
-    timeSlots.forEach(slot => {
-      slot.addEventListener('click', function() {
-        // Remove previous selection
-        timeSlots.forEach(s => s.classList.remove('selected'));
-        
-        // Add selection to clicked slot
-        this.classList.add('selected');
-        
-        // Update hidden input and display
-        const timeValue = this.dataset.time;
-        const displayValue = this.dataset.display;
-        
-        if (hiddenTimeInput) hiddenTimeInput.value = timeValue;
-        if (selectedTimeValue) selectedTimeValue.textContent = displayValue;
-        if (selectedTimeDisplay) selectedTimeDisplay.classList.add('has-selection');
-
-        // Trigger haptic feedback
-        triggerHapticFeedback(this, 'medium');
-        
-        // Add ripple effect
-        createRippleEffect(this);
+        this.classList.add('date-focused');
       });
 
-      // Add hover haptic feedback
-      slot.addEventListener('mouseenter', function() {
+      dateInput.addEventListener('blur', function() {
+        this.classList.remove('date-focused');
+      });
+
+      // Add smooth hover effects
+      dateInput.addEventListener('mouseenter', function() {
         if (window.matchMedia('(hover: hover)').matches) {
-          triggerHapticFeedback(this, 'light');
+          triggerHapticFeedback(this, 'light', 100);
         }
       });
-    });
-
-    // Create ripple effect
-    function createRippleEffect(element) {
-      const ripple = document.createElement('span');
-      ripple.classList.add('ripple');
-      
-      const rect = element.getBoundingClientRect();
-      const size = Math.max(rect.width, rect.height);
-      const x = rect.width / 2;
-      const y = rect.height / 2;
-      
-      ripple.style.width = ripple.style.height = size + 'px';
-      ripple.style.left = (x - size / 2) + 'px';
-      ripple.style.top = (y - size / 2) + 'px';
-      
-      element.appendChild(ripple);
-      
-      setTimeout(() => {
-        if (ripple.parentNode) {
-          ripple.parentNode.removeChild(ripple);
-        }
-      }, 600);
     }
 
-    // Add ripple CSS if not already present
-    if (!document.querySelector('style[data-ripple]')) {
-      const rippleStyle = document.createElement('style');
-      rippleStyle.setAttribute('data-ripple', 'true');
-      rippleStyle.textContent = `
-        .time-slot {
-          position: relative;
-          overflow: hidden;
-        }
-        .ripple {
-          position: absolute;
-          border-radius: 50%;
-          background: rgba(255, 255, 255, 0.6);
-          transform: scale(0);
-          animation: ripple 0.6s linear;
-          pointer-events: none;
-        }
-        @keyframes ripple {
-          to {
-            transform: scale(4);
-            opacity: 0;
-          }
-        }
-      `;
-      document.head.appendChild(rippleStyle);
-    }
-
-    // Progressive enhancement for touch devices
-    if ('ontouchstart' in window) {
-      timeSlots.forEach(slot => {
-        slot.addEventListener('touchstart', function() {
-          triggerHapticFeedback(this, 'light');
-        });
-      });
-    }
-
-    // Keyboard navigation support
+    // Enhanced time slot selection
     timeSlots.forEach((slot, index) => {
+      // Add staggered entrance animation
+      slot.style.animationDelay = `${index * 0.1}s`;
+      slot.classList.add('slot-entrance');
+
+      slot.addEventListener('click', function() {
+        // Remove previous selection with animation
+        timeSlots.forEach(s => {
+          if (s.classList.contains('selected')) {
+            s.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+              s.classList.remove('selected');
+              s.style.transform = '';
+            }, 150);
+          }
+        });
+        
+        // Add selection with enhanced animation
+        setTimeout(() => {
+          this.classList.add('selected');
+          
+          const timeValue = this.dataset.time;
+          const displayValue = this.dataset.display;
+          
+          if (hiddenTimeInput) hiddenTimeInput.value = timeValue;
+          if (selectedTimeValue) {
+            selectedTimeValue.textContent = displayValue;
+            // Animate text change
+            selectedTimeValue.style.transform = 'scale(1.2)';
+            setTimeout(() => {
+              selectedTimeValue.style.transform = '';
+            }, 200);
+          }
+          if (selectedTimeDisplay) {
+            selectedTimeDisplay.classList.add('has-selection');
+            selectedTimeDisplay.style.transform = 'translateY(-2px) scale(1.02)';
+            setTimeout(() => {
+              selectedTimeDisplay.style.transform = 'translateY(-2px)';
+            }, 300);
+          }
+
+          // Enhanced haptic feedback for selection
+          triggerHapticFeedback(this, 'success');
+          
+          // Create enhanced ripple effect
+          createAdvancedRipple(this);
+          
+          // Success sound simulation (visual)
+          showTimeFeedback('Time selected successfully!', 'success');
+          
+        }, 150);
+      });
+
+      // Enhanced hover effects
+      slot.addEventListener('mouseenter', function() {
+        if (!this.classList.contains('selected') && window.matchMedia('(hover: hover)').matches) {
+          triggerHapticFeedback(this, 'light', 100);
+          this.style.transform = 'translateY(-2px) scale(1.02)';
+        }
+      });
+
+      slot.addEventListener('mouseleave', function() {
+        if (!this.classList.contains('selected')) {
+          this.style.transform = '';
+        }
+      });
+
+      // Enhanced keyboard navigation
       slot.addEventListener('keydown', function(e) {
         let nextIndex;
         
@@ -616,9 +661,126 @@
             e.preventDefault();
             this.click();
             break;
+          case 'Escape':
+            this.blur();
+            break;
         }
       });
     });
+
+    // Enhanced ripple effect
+    function createAdvancedRipple(element) {
+      const ripple = document.createElement('div');
+      ripple.classList.add('ripple');
+      
+      const rect = element.getBoundingClientRect();
+      const size = Math.max(rect.width, rect.height) * 1.5;
+      
+      ripple.style.width = ripple.style.height = size + 'px';
+      ripple.style.left = (rect.width / 2 - size / 2) + 'px';
+      ripple.style.top = (rect.height / 2 - size / 2) + 'px';
+      
+      element.appendChild(ripple);
+      
+      setTimeout(() => {
+        if (ripple.parentNode) {
+          ripple.parentNode.removeChild(ripple);
+        }
+      }, 800);
+    }
+
+    // Feedback notification system
+    function showTimeFeedback(message, type = 'info') {
+      const feedback = document.createElement('div');
+      feedback.className = `time-feedback time-feedback--${type}`;
+      feedback.textContent = message;
+      feedback.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${type === 'success' ? '#10b981' : '#3b82f6'};
+        color: white;
+        padding: 12px 20px;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        z-index: 10000;
+        font-weight: 600;
+        font-size: 14px;
+        opacity: 0;
+        transform: translateX(100%);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      `;
+      
+      document.body.appendChild(feedback);
+      
+      // Animate in
+      setTimeout(() => {
+        feedback.style.opacity = '1';
+        feedback.style.transform = 'translateX(0)';
+      }, 10);
+      
+      // Animate out
+      setTimeout(() => {
+        feedback.style.opacity = '0';
+        feedback.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+          if (feedback.parentNode) {
+            feedback.parentNode.removeChild(feedback);
+          }
+        }, 400);
+      }, 2000);
+    }
+
+    function showDateFeedback(message, type = 'info') {
+      showTimeFeedback(message, type);
+    }
+
+    // Progressive enhancement for touch devices
+    if ('ontouchstart' in window) {
+      timeSlots.forEach(slot => {
+        slot.addEventListener('touchstart', function(e) {
+          triggerHapticFeedback(this, 'light');
+          this.style.transform = 'scale(0.98)';
+        });
+        
+        slot.addEventListener('touchend', function() {
+          setTimeout(() => {
+            if (!this.classList.contains('selected')) {
+              this.style.transform = '';
+            }
+          }, 100);
+        });
+      });
+    }
+
+    // Add entrance animations
+    const style = document.createElement('style');
+    style.textContent = `
+      .slot-entrance {
+        opacity: 0;
+        transform: translateY(20px);
+        animation: slotEnter 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+      }
+      
+      @keyframes slotEnter {
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      
+      .date-focused {
+        box-shadow: 0 0 0 4px rgba(13,148,136,0.1) !important;
+      }
+    `;
+    document.head.appendChild(style);
+
+    // Initialize entrance animations
+    setTimeout(() => {
+      timeSlots.forEach(slot => {
+        slot.classList.add('slot-entrance');
+      });
+    }, 100);
   }
 
   // Initialize when DOM is loaded
