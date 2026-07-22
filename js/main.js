@@ -5,6 +5,16 @@
 (function() {
   'use strict';
 
+  // ── LANGUAGE TOGGLE ──
+  const langToggle = document.getElementById('lang-toggle');
+  if (langToggle) {
+    langToggle.addEventListener('click', function () {
+      I18N.toggle();
+    });
+  }
+  // Apply saved/default language on load
+  I18N.applyLanguage();
+
   // ── NAVBAR SCROLL EFFECT ──
   const navbar = document.getElementById('navbar');
   
@@ -22,13 +32,11 @@
   // ── MOBILE MENU TOGGLE ──
   const hamburger = document.getElementById('hamburger');
   const mainNav = document.getElementById('main-nav');
-  
+
   hamburger.addEventListener('click', function() {
     const isOpen = hamburger.classList.toggle('open');
     mainNav.classList.toggle('open');
     hamburger.setAttribute('aria-expanded', isOpen);
-    
-    // Prevent body scroll when menu is open
     document.body.style.overflow = isOpen ? 'hidden' : '';
   });
 
@@ -89,7 +97,7 @@
 
   // ── SCROLL REVEAL ANIMATION ──
   const revealElements = document.querySelectorAll(
-    '.service-card, .testimonial-card, .about__visual, .about__text, ' +
+    '.testimonial-card, .about__visual, .about__text, ' +
     '.schedule__text, .schedule__table-wrap, .contact__info, .contact__form, ' +
     '.section__header, .stat'
   );
@@ -152,6 +160,158 @@
 
   sections.forEach(section => navObserver.observe(section));
 
+  // ── SERVICE CARD FLIP ──
+  document.querySelectorAll('.service-card').forEach(card => {
+    function toggleFlip(e) {
+      // Don't flip if clicking the "Book now" link on the back
+      if (e.target.closest('.service-card__cta')) return;
+      const isFlipped = card.classList.toggle('is-flipped');
+      card.setAttribute('aria-expanded', isFlipped);
+    }
+    card.addEventListener('click', toggleFlip);
+    card.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleFlip(e); }
+    });
+  });
+
+  // ── BOOKING FORM — Channel, Platform Cards, GPS ──
+  (function initBookingForm() {
+    const channelVirtual  = document.getElementById('channel-virtual');
+    const channelExpress  = document.getElementById('channel-express');
+    const sectionPlatform = document.getElementById('field-virtual-platform');
+    const sectionAddress  = document.getElementById('field-express-address');
+    const platformInput   = document.getElementById('virtual-platform');
+    const platformCards   = document.querySelectorAll('.form-platform-card');
+    const addressInput    = document.getElementById('address');
+    const emailInput      = document.getElementById('email');
+    const emailBadge      = document.getElementById('email-required-badge');
+    const channelError    = document.getElementById('channel-error');
+    const platformError   = document.getElementById('platform-error');
+    const addressError    = document.getElementById('address-error');
+
+    if (!channelVirtual) return; // not on booking page
+
+    function showSection(el) {
+      if (!el) return;
+      el.hidden = false;
+      el.classList.remove('active');
+      void el.offsetWidth;
+      el.classList.add('active');
+    }
+    function hideSection(el) {
+      if (!el) return;
+      el.hidden = true;
+      el.classList.remove('active');
+    }
+
+    function onChannelChange() {
+      const val = document.querySelector('input[name="channel"]:checked')?.value;
+      if (channelError) channelError.textContent = '';
+
+      if (val === 'virtual') {
+        showSection(sectionPlatform);
+        hideSection(sectionAddress);
+        // Email becomes required for virtual
+        if (emailInput) { emailInput.required = true; }
+        if (emailBadge) { emailBadge.hidden = false; }
+        if (addressInput) { addressInput.required = false; }
+      } else if (val === 'express') {
+        hideSection(sectionPlatform);
+        showSection(sectionAddress);
+        // Email optional, address required
+        if (emailInput) { emailInput.required = false; }
+        if (emailBadge) { emailBadge.hidden = true; }
+        if (addressInput) { addressInput.required = true; }
+        // Clear platform
+        platformCards.forEach(c => c.setAttribute('aria-pressed', 'false'));
+        if (platformInput) platformInput.value = '';
+      } else {
+        hideSection(sectionPlatform);
+        hideSection(sectionAddress);
+        if (emailInput) { emailInput.required = false; }
+        if (emailBadge) { emailBadge.hidden = true; }
+      }
+    }
+
+    channelVirtual.addEventListener('change', onChannelChange);
+    channelExpress.addEventListener('change', onChannelChange);
+
+    // Also handle direct label click for iOS (radio change may not fire reliably)
+    document.querySelectorAll('.form-channel-card').forEach(label => {
+      label.addEventListener('click', function () {
+        // Update is-selected class on all channel cards
+        document.querySelectorAll('.form-channel-card').forEach(l => l.classList.remove('is-selected'));
+        this.classList.add('is-selected');
+        // Trigger onChannelChange after a tick so radio.checked is updated
+        setTimeout(onChannelChange, 0);
+      });
+    });
+
+    // Platform card click
+    platformCards.forEach(card => {
+      card.addEventListener('click', function () {
+        platformCards.forEach(c => c.setAttribute('aria-pressed', 'false'));
+        this.setAttribute('aria-pressed', 'true');
+        if (platformInput) platformInput.value = this.dataset.platform;
+        if (platformError) platformError.textContent = '';
+      });
+      card.addEventListener('keydown', e => {
+        if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); card.click(); }
+      });
+    });
+
+    // GPS
+    const gpsBtn        = document.getElementById('gps-btn');
+    const gpsBtnText    = document.getElementById('gps-btn-text');
+    const gpsResult     = document.getElementById('gps-result');
+    const gpsResultText = document.getElementById('gps-result-text');
+    const gpsMapLink    = document.getElementById('gps-map-link');
+    const gpsCoordsInput = document.getElementById('gps-coords');
+    const gpsSubText    = document.getElementById('gps-sub-text');
+
+    if (gpsBtn) {
+      gpsBtn.addEventListener('click', function () {
+        if (!navigator.geolocation) {
+          if (gpsSubText) gpsSubText.textContent = 'GPS not available on this device.';
+          return;
+        }
+
+        gpsBtn.disabled = true;
+        gpsBtn.classList.add('detecting');
+        if (gpsBtnText) gpsBtnText.textContent = 'Detecting…';
+
+        navigator.geolocation.getCurrentPosition(
+          function (pos) {
+            const lat = pos.coords.latitude.toFixed(6);
+            const lng = pos.coords.longitude.toFixed(6);
+            const acc = Math.round(pos.coords.accuracy);
+            const coords = `${lat}, ${lng}`;
+
+            if (gpsCoordsInput) gpsCoordsInput.value = coords;
+            if (gpsResultText) gpsResultText.textContent = `${coords}  ±${acc}m`;
+            if (gpsMapLink) {
+              gpsMapLink.href = `https://maps.google.com/?q=${lat},${lng}`;
+            }
+            if (gpsResult) { gpsResult.hidden = false; }
+            if (gpsSubText) gpsSubText.textContent = `Location captured · ±${acc}m accuracy`;
+
+            gpsBtn.disabled = false;
+            gpsBtn.classList.remove('detecting');
+            if (gpsBtnText) gpsBtnText.textContent = '✔ Done';
+          },
+          function (err) {
+            gpsBtn.disabled = false;
+            gpsBtn.classList.remove('detecting');
+            if (gpsBtnText) gpsBtnText.textContent = 'Retry';
+            const msgs = { 1: 'Permission denied.', 2: 'Position unavailable.', 3: 'Timed out.' };
+            if (gpsSubText) gpsSubText.textContent = msgs[err.code] || 'Location error.';
+          },
+          { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+        );
+      });
+    }
+  })();
+
   // ── CONTACT FORM — Formspree AJAX + localStorage backup ──
   const form        = document.getElementById('contact-form');
   const formSuccess = document.getElementById('form-success');
@@ -200,8 +360,12 @@
     list.unshift({
       id:        'a' + Date.now().toString(36),
       name:      data.name,
+      patient_id: data.patient_id || '',
       phone:     data.phone,
       email:     data.email     || '',
+      channel:   data.channel   || '',
+      platform:  data.virtual_platform || '',
+      address:   data.address   || '',
       service:   data.service   || '',
       date:      data.preferred_date || '',
       time:      data.preferred_time || '',
@@ -219,6 +383,7 @@
     const fields = form.querySelectorAll('input[required], textarea[required]');
     let allValid = true;
     fields.forEach(f => { if (!validateField(f)) allValid = false; });
+
     if (!allValid) {
       const firstErr = form.querySelector('.has-error input, .has-error textarea');
       if (firstErr) firstErr.focus();
@@ -226,10 +391,10 @@
     }
 
     submitBtn.textContent = 'Enviando…';
-    submitBtn.disabled    = true;
+    submitBtn.disabled = true;
 
     const formData = new FormData(form);
-    const payload  = Object.fromEntries(formData.entries());
+    const payload = Object.fromEntries(formData.entries());
 
     // Always save locally so admin can see it regardless of backend
     saveAppointmentLocally(payload);
@@ -241,17 +406,15 @@
     if (isBackend) {
       try {
         const res = await fetch(action, {
-          method:  'POST',
+          method: 'POST',
           headers: { 'Accept': 'application/json' },
-          body:    formData
+          body: formData
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || data.ok === false) {
           throw new Error(data.error || ('Error ' + res.status));
         }
       } catch (err) {
-        // Keep the success message (data is saved locally + retried later),
-        // but log so we can diagnose. Real failure still shows confirmation to user.
         console.warn('Booking backend submission failed; saved locally only.', err);
       }
     }

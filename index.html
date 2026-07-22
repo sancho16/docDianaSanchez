@@ -1,15 +1,15 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Dra. Diana Carolina Sánchez Dávila – Médico General en Costa Rica. Consultas, servicios médicos y atención personalizada." />
-  <meta name="keywords" content="médico, doctora, Costa Rica, consulta médica, Diana Sánchez, salud" />
-  <title>Dra. Diana Carolina Sánchez Dávila | Médico General – Costa Rica</title>
-  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <meta name="description" content="Dr. Diana Carolina Sánchez Dávila – Surgeon and General Physician in Costa Rica. Medical consultations and personalized care." />
+  <meta name="keywords" content="doctor, surgeon, Costa Rica, medical consultation, Diana Sánchez, health, IV therapy, facial harmonization" />
+  <title>Dr. Diana Carolina Sánchez Dávila | Surgeon &amp; General Physician – Costa Rica</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=2" />
   <!-- Open Graph -->
-  <meta property="og:title"       content="Dra. Diana Carolina Sánchez Dávila – Médico General" />
-  <meta property="og:description" content="Atención médica profesional y personalizada en Costa Rica. Consultas presenciales y virtuales." />
+  <meta property="og:title"       content="Dr. Diana Carolina Sánchez Dávila – Surgeon & General Physician" />
+  <meta property="og:description" content="Professional and personalized medical care in Costa Rica. In-person and virtual consultations." />
   <meta property="og:image"       content="assets/og-image.svg" />
   <meta property="og:url"         content="https://docdianasanchez.com" />
   <meta property="og:type"        content="website" />
@@ -20,30 +20,34 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <script src="js/i18n.js"></script>
 </head>
 <body>
 
   <!-- ═══ NAVBAR ═══ -->
   <header class="navbar" id="navbar" role="banner">
     <div class="container navbar__inner">
-      <a href="#inicio" class="navbar__logo" aria-label="Ir al inicio">
+      <a href="#inicio" class="navbar__logo" data-i18n="nav.logo.aria" data-i18n-attr="aria-label" aria-label="Go to home">
         <span class="logo-cross" aria-hidden="true">✚</span>
-        <span class="logo-text">Dra. Diana Sánchez</span>
+        <span class="logo-text">Dr. Diana Sánchez</span>
       </a>
-      <nav class="navbar__nav" id="main-nav" role="navigation" aria-label="Navegación principal">
+      <nav class="navbar__nav" id="main-nav" role="navigation" aria-label="Main navigation">
         <ul class="nav-list">
-          <li><a href="#inicio"   class="nav-link">Inicio</a></li>
-          <li><a href="#sobre-mi" class="nav-link">Sobre mí</a></li>
-          <li><a href="#servicios" class="nav-link">Servicios</a></li>
-          <li><a href="#horarios" class="nav-link">Horarios</a></li>
-          <li><a href="#contacto" class="nav-link nav-link--cta">Agendar cita</a></li>
+          <li><a href="#inicio"    class="nav-link" data-i18n="nav.home">Home</a></li>
+          <li><a href="#sobre-mi"  class="nav-link" data-i18n="nav.about">About</a></li>
+          <li><a href="#servicios" class="nav-link" data-i18n="nav.services">Services</a></li>
+          <li><a href="#horarios"  class="nav-link" data-i18n="nav.schedule">Hours</a></li>
+          <li><a href="#contacto"  class="nav-link nav-link--cta" data-i18n="nav.contact">Book Appointment</a></li>
         </ul>
       </nav>
-      <button class="hamburger" id="hamburger" aria-label="Abrir menú" aria-expanded="false" aria-controls="main-nav">
-        <span class="hamburger__bar"></span>
-        <span class="hamburger__bar"></span>
-        <span class="hamburger__bar"></span>
-      </button>
+      <div class="navbar__controls">
+        <button id="lang-toggle" class="lang-toggle" aria-label="Cambiar a Español" lang="es">ES</button>
+        <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false" aria-controls="main-nav">
+          <span class="hamburger__bar"></span>
+          <span class="hamburger__bar"></span>
+          <span class="hamburger__bar"></span>
+        </button>
+      </div>
     </div>
   </header>
 
@@ -59,39 +63,36 @@
       <div class="container hero__content">
         <div class="hero__badge">
           <span class="hero__badge-dot" aria-hidden="true"></span>
-          Disponible para consultas · Costa Rica
+          <span data-i18n="hero.badge">Available for consultations · Costa Rica</span>
         </div>
         <h1 class="hero__title">
-          Dra. Diana Carolina<br/>
+          Dr. Diana Carolina<br/>
           <span class="text-red">Sánchez Dávila</span>
         </h1>
-        <p class="hero__subtitle">Cirujana &amp; Médico General · Atención Integral</p>
-        <p class="hero__desc">
-          Atención médica profesional, empática y personalizada para usted y su familia.<br/>
-          Consultas presenciales y virtuales en Costa Rica.
-        </p>
+        <p class="hero__subtitle" data-i18n="hero.subtitle">Surgeon &amp; General Physician · Comprehensive Care</p>
+        <p class="hero__desc" data-i18n="hero.desc">Professional, empathetic and personalized medical care for you and your family.<br/>In-person and virtual consultations in Costa Rica.</p>
         <div class="hero__actions">
-          <a href="#contacto" class="btn btn--primary">Agendar cita</a>
-          <a href="#servicios" class="btn btn--ghost">Ver servicios</a>
+          <a href="#contacto" class="btn btn--primary" data-i18n="hero.cta1">Book Appointment</a>
+          <a href="#servicios" class="btn btn--ghost"  data-i18n="hero.cta2">View Services</a>
         </div>
-        <div class="hero__stats" aria-label="Estadísticas">
+        <div class="hero__stats" aria-label="Statistics">
           <div class="stat">
             <span class="stat__num">7<span class="text-red">+</span></span>
-            <span class="stat__label">Años de experiencia</span>
+            <span class="stat__label" data-i18n="hero.stat1">Years of experience</span>
           </div>
           <div class="stat__divider" aria-hidden="true"></div>
           <div class="stat">
             <span class="stat__num">3000<span class="text-red">+</span></span>
-            <span class="stat__label">Pacientes atendidos</span>
+            <span class="stat__label" data-i18n="hero.stat2">Patients treated</span>
           </div>
           <div class="stat__divider" aria-hidden="true"></div>
           <div class="stat">
             <span class="stat__num">100<span class="text-red">%</span></span>
-            <span class="stat__label">Compromiso</span>
+            <span class="stat__label" data-i18n="hero.stat3">Commitment</span>
           </div>
         </div>
       </div>
-      <a href="#sobre-mi" class="hero__scroll" aria-label="Desplazarse hacia abajo">
+      <a href="#sobre-mi" class="hero__scroll" data-i18n="hero.scroll.aria" data-i18n-attr="aria-label" aria-label="Scroll down">
         <span class="scroll-arrow" aria-hidden="true">↓</span>
       </a>
     </section>
@@ -111,9 +112,9 @@
         ></video>
         <div class="vid-scrub__overlay" aria-hidden="true"></div>
         <div class="vid-scrub__content">
-          <span class="vid-scrub__label text-red">Cirugía &amp; Medicina</span>
-          <h2 class="vid-scrub__title">Precisión que<br/><span class="text-red">transforma vidas</span></h2>
-          <p class="vid-scrub__desc">Formación quirúrgica de alto nivel al servicio de cada paciente en Costa Rica.</p>
+          <span class="vid-scrub__label text-red" data-i18n="video.label">Surgery &amp; Medicine</span>
+          <h2 class="vid-scrub__title" data-i18n="video.title">Precision that<br/><span class="text-red">transforms lives</span></h2>
+          <p class="vid-scrub__desc" data-i18n="video.desc">High-level surgical training at the service of every patient in Costa Rica.</p>
         </div>
         <div class="vid-scrub__progress" aria-hidden="true">
           <div class="vid-scrub__progress-bar" id="vid-progress-bar"></div>
@@ -130,50 +131,31 @@
           <div class="about__photo-wrap">
             <img
               src="assets/diana.jpg"
-              alt="Dra. Diana Carolina Sánchez Dávila, Cirujana y Médico General"
+              data-i18n="about.img.alt" data-i18n-attr="alt"
+              alt="Dr. Diana Carolina Sánchez Dávila, Surgeon and General Physician"
               class="about__photo"
               width="400"
               height="500"
-              loading="lazy"
             />
             <div class="about__photo-badge" aria-hidden="true">
               <span class="about__photo-badge-cross">✚</span>
-              <span>Cirujana</span>
+              <span data-i18n="about.badge">Surgeon</span>
             </div>
           </div>
           <div class="about__accent" aria-hidden="true"></div>
         </div>
         <div class="about__text">
-          <span class="section__label text-red">Sobre mí</span>
-          <h2 class="section__title" id="about-title">Su salud, mi vocación</h2>
-          <p>
-            Soy la Dra. Diana Carolina Sánchez Dávila, cirujana y médico general con más de 7 años de experiencia 
-            brindando atención integral a pacientes de todas las edades en Costa Rica. Mi enfoque combina 
-            el rigor científico con un trato humano y cercano.
-          </p>
-          <p>
-            Me gradué de la Universidad Iberoamericana (UIA) y he dedicado mi carrera a la cirugía general, 
-            medicina preventiva y el manejo de enfermedades crónicas.
-          </p>
-          <ul class="about__credentials" aria-label="Credenciales">
-            <li>
-              <span class="cred-icon" aria-hidden="true">✚</span>
-              Cirujana General – Colegio de Médicos y Cirujanos de CR
-            </li>
-            <li>
-              <span class="cred-icon" aria-hidden="true">✚</span>
-              Graduada – Universidad Iberoamericana (UIA)
-            </li>
-            <li>
-              <span class="cred-icon" aria-hidden="true">✚</span>
-              Especialidad en Cirugía General y Medicina Preventiva
-            </li>
-            <li>
-              <span class="cred-icon" aria-hidden="true">✚</span>
-              7+ años de experiencia en Costa Rica
-            </li>
+          <span class="section__label text-red" data-i18n="about.label">About Me</span>
+          <h2 class="section__title" id="about-title" data-i18n="about.title">Your health, my calling</h2>
+          <p data-i18n="about.p1">I am Dr. Diana Carolina Sánchez Dávila, a surgeon and general physician with over 7 years of experience providing comprehensive care to patients of all ages in Costa Rica. My approach combines scientific rigor with a human and personal touch.</p>
+          <p data-i18n="about.p2">I graduated from the <a href="https://uia.ac.cr" target="_blank" rel="noopener noreferrer" class="about__link">Universidad Internacional de las Américas (UIA)</a>, one of Costa Rica's leading private universities committed to academic excellence, and have dedicated my career to general surgery, preventive medicine, and chronic disease management.</p>
+          <ul class="about__credentials" aria-label="Credentials">
+            <li><span class="cred-icon" aria-hidden="true">✚</span><span data-i18n="about.cred1">Surgeon – Medical College of Costa Rica</span></li>
+            <li><span class="cred-icon" aria-hidden="true">✚</span><span data-i18n="about.cred2">Graduate – <a href="https://uia.ac.cr" target="_blank" rel="noopener noreferrer" class="about__link">Universidad Internacional de las Américas (UIA)</a></span></li>
+            <li><span class="cred-icon" aria-hidden="true">✚</span><span data-i18n="about.cred3">Specialty in General Surgery &amp; Preventive Medicine</span></li>
+            <li><span class="cred-icon" aria-hidden="true">✚</span><span data-i18n="about.cred4">7+ years of experience in Costa Rica</span></li>
           </ul>
-          <a href="#contacto" class="btn btn--primary">Solicitar consulta</a>
+          <a href="#contacto" class="btn btn--primary" data-i18n="about.cta">Request Consultation</a>
         </div>
       </div>
     </section>
@@ -182,117 +164,154 @@
     <section class="section services" id="servicios" aria-labelledby="services-title">
       <div class="container">
         <div class="section__header">
-          <span class="section__label text-red">Servicios</span>
-          <h2 class="section__title" id="services-title">¿En qué le puedo ayudar?</h2>
-          <p class="section__desc">Atención médica completa y personalizada para toda la familia.</p>
+          <span class="section__label text-red" data-i18n="services.label">Services</span>
+          <h2 class="section__title" id="services-title" data-i18n="services.title">How can I help you?</h2>
+          <p class="section__desc" data-i18n="services.desc">Complete, personalized medical care for the whole family.</p>
         </div>
         <div class="services__grid" role="list">
 
-          <!-- ── Terapias Intravenosas ── -->
-          <article class="service-card service-card--featured" role="listitem">
-            <div class="service-card__icon" aria-hidden="true">
-              <svg viewBox="0 0 48 48" fill="none">
-                <path d="M14 8h4l2 6H10l2-6Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-                <path d="M12 14v20a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V14" stroke="currentColor" stroke-width="2"/>
-                <path d="M18 20v10M15 23h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                <path d="M24 24h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              </svg>
+          <article class="service-card service-card--featured" role="listitem" tabindex="0" aria-label="Vitamin C IV — tap to learn more">
+            <div class="service-card__flipper">
+              <div class="service-card__front">
+                <div class="service-card__icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none"><path d="M14 8h4l2 6H10l2-6Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 14v20a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V14" stroke="currentColor" stroke-width="2"/><path d="M18 20v10M15 23h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M24 24h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
+                <h3 class="service-card__title" data-i18n="s1.title">Vitamin C IV</h3>
+                <span class="service-card__tag" data-i18n="s1.tag">IV Therapy</span>
+                <span class="service-card__hint" aria-hidden="true" data-i18n="service.hint">Tap to learn more</span>
+              </div>
+              <div class="service-card__back">
+                <h3 class="service-card__title" data-i18n="s1.title">Vitamin C IV</h3>
+                <p class="service-card__desc" data-i18n="s1.desc">High-dose intravenous vitamin C therapy to strengthen the immune system, boost energy, and promote cellular recovery.</p>
+                <a href="#contacto" class="service-card__cta" data-i18n="service.book">Book now</a>
+              </div>
             </div>
-            <h3 class="service-card__title">Vitamina C IV</h3>
-            <p class="service-card__desc">Terapia intravenosa de vitamina C de alta dosis para fortalecer el sistema inmune, aumentar energía y promover la recuperación celular.</p>
-            <span class="service-card__tag">Terapia IV</span>
           </article>
 
-          <article class="service-card service-card--featured" role="listitem">
-            <div class="service-card__icon" aria-hidden="true">
-              <svg viewBox="0 0 48 48" fill="none">
-                <path d="M14 8h4l2 6H10l2-6Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-                <path d="M12 14v20a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V14" stroke="currentColor" stroke-width="2"/>
-                <path d="M18 18v14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                <circle cx="33" cy="26" r="7" stroke="currentColor" stroke-width="2"/>
-                <path d="M33 23v6M30 26h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-              </svg>
+          <article class="service-card service-card--featured" role="listitem" tabindex="0" aria-label="B-Complex IV — tap to learn more">
+            <div class="service-card__flipper">
+              <div class="service-card__front">
+                <div class="service-card__icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none"><path d="M14 8h4l2 6H10l2-6Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 14v20a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V14" stroke="currentColor" stroke-width="2"/><path d="M18 18v14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="33" cy="26" r="7" stroke="currentColor" stroke-width="2"/><path d="M33 23v6M30 26h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+                <h3 class="service-card__title" data-i18n="s2.title">B-Complex IV</h3>
+                <span class="service-card__tag" data-i18n="s2.tag">IV Therapy</span>
+                <span class="service-card__hint" aria-hidden="true" data-i18n="service.hint">Tap to learn more</span>
+              </div>
+              <div class="service-card__back">
+                <h3 class="service-card__title" data-i18n="s2.title">B-Complex IV</h3>
+                <p class="service-card__desc" data-i18n="s2.desc">Intravenous B-vitamin complex infusion to improve energy metabolism, neurological function, and reduce oxidative stress.</p>
+                <a href="#contacto" class="service-card__cta" data-i18n="service.book">Book now</a>
+              </div>
             </div>
-            <h3 class="service-card__title">Complejo B IV</h3>
-            <p class="service-card__desc">Infusión intravenosa de complejo vitamínico B para mejorar el metabolismo energético, función neurológica y reducir el estrés oxidativo.</p>
-            <span class="service-card__tag">Terapia IV</span>
           </article>
 
-          <article class="service-card service-card--featured" role="listitem">
-            <div class="service-card__icon" aria-hidden="true">
-              <svg viewBox="0 0 48 48" fill="none">
-                <path d="M10 16h6l3-8 6 20 4-12 3 8h6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M8 38h32" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              </svg>
+          <article class="service-card service-card--featured" role="listitem" tabindex="0" aria-label="IV Rehydration — tap to learn more">
+            <div class="service-card__flipper">
+              <div class="service-card__front">
+                <div class="service-card__icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none"><path d="M10 16h6l3-8 6 20 4-12 3 8h6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 38h32" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
+                <h3 class="service-card__title" data-i18n="s3.title">IV Rehydration</h3>
+                <span class="service-card__tag" data-i18n="s3.tag">IV Therapy</span>
+                <span class="service-card__hint" aria-hidden="true" data-i18n="service.hint">Tap to learn more</span>
+              </div>
+              <div class="service-card__back">
+                <h3 class="service-card__title" data-i18n="s3.title">IV Rehydration</h3>
+                <p class="service-card__desc" data-i18n="s3.desc">Rapid intravenous rehydration therapy with electrolyte solutions for dehydration, exhaustion, or post-exercise recovery.</p>
+                <a href="#contacto" class="service-card__cta" data-i18n="service.book">Book now</a>
+              </div>
             </div>
-            <h3 class="service-card__title">Rehidratación IV</h3>
-            <p class="service-card__desc">Terapia de rehidratación intravenosa rápida con soluciones electrolíticas para deshidratación, agotamiento o recuperación post-ejercicio.</p>
-            <span class="service-card__tag">Terapia IV</span>
           </article>
 
-          <article class="service-card service-card--featured" role="listitem">
-            <div class="service-card__icon" aria-hidden="true">
-              <svg viewBox="0 0 48 48" fill="none">
-                <path d="M14 8h4l2 6H10l2-6Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-                <path d="M12 14v20a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V14" stroke="currentColor" stroke-width="2"/>
-                <path d="M32 18c4 0 7 2 7 6s-3 6-7 6H26" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                <path d="M18 24h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              </svg>
+          <article class="service-card service-card--featured" role="listitem" tabindex="0" aria-label="Symptomatic IV — tap to learn more">
+            <div class="service-card__flipper">
+              <div class="service-card__front">
+                <div class="service-card__icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none"><path d="M14 8h4l2 6H10l2-6Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 14v20a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V14" stroke="currentColor" stroke-width="2"/><path d="M32 18c4 0 7 2 7 6s-3 6-7 6H26" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M18 24h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
+                <h3 class="service-card__title" data-i18n="s4.title">Symptomatic IV</h3>
+                <span class="service-card__tag" data-i18n="s4.tag">IV Therapy</span>
+                <span class="service-card__hint" aria-hidden="true" data-i18n="service.hint">Tap to learn more</span>
+              </div>
+              <div class="service-card__back">
+                <h3 class="service-card__title" data-i18n="s4.title">Symptomatic IV</h3>
+                <p class="service-card__desc" data-i18n="s4.desc">Personalized IV therapy for symptomatic management of migraine, nausea, fever, and general discomfort with rapid relief.</p>
+                <a href="#contacto" class="service-card__cta" data-i18n="service.book">Book now</a>
+              </div>
             </div>
-            <h3 class="service-card__title">IV Sintomática</h3>
-            <p class="service-card__desc">Terapia intravenosa personalizada para el manejo sintomático de migraña, náuseas, fiebre, y malestar general con alivio rápido.</p>
-            <span class="service-card__tag">Terapia IV</span>
           </article>
 
-          <article class="service-card" role="listitem">
-            <div class="service-card__icon" aria-hidden="true">
-              <svg viewBox="0 0 48 48" fill="none">
-                <ellipse cx="24" cy="18" rx="10" ry="12" stroke="currentColor" stroke-width="2.5"/>
-                <path d="M14 18c0 6 4 12 10 16 6-4 10-10 10-16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                <path d="M20 12c1-2 3-3 4-3M28 24c-1 3-3 5-4 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                <circle cx="34" cy="12" r="4" stroke="currentColor" stroke-width="2"/>
-                <path d="M34 10v4M32 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-              </svg>
+          <article class="service-card" role="listitem" tabindex="0" aria-label="Facial Harmonization — tap to learn more">
+            <div class="service-card__flipper">
+              <div class="service-card__front">
+                <div class="service-card__icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none"><ellipse cx="24" cy="18" rx="10" ry="12" stroke="currentColor" stroke-width="2.5"/><path d="M14 18c0 6 4 12 10 16 6-4 10-10 10-16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="34" cy="12" r="4" stroke="currentColor" stroke-width="2"/><path d="M34 10v4M32 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+                <h3 class="service-card__title" data-i18n="s5.title">Facial Harmonization</h3>
+                <span class="service-card__tag" data-i18n="s5.tag">Medical Aesthetics</span>
+                <span class="service-card__hint" aria-hidden="true" data-i18n="service.hint">Tap to learn more</span>
+              </div>
+              <div class="service-card__back">
+                <h3 class="service-card__title" data-i18n="s5.title">Facial Harmonization</h3>
+                <p class="service-card__desc" data-i18n="s5.desc">Medical aesthetic procedures to naturally enhance and balance facial features. Includes biofiller, botulinum toxin, and more.</p>
+                <a href="#contacto" class="service-card__cta" data-i18n="service.book">Book now</a>
+              </div>
             </div>
-            <h3 class="service-card__title">Armonización Facial</h3>
-            <p class="service-card__desc">Procedimientos estéticos médicos para realzar y equilibrar los rasgos faciales de forma natural. Incluye biorelleno, toxina botulínica y más.</p>
-            <span class="service-card__tag">Estética Médica</span>
           </article>
 
-          <article class="service-card" role="listitem">
-            <div class="service-card__icon" aria-hidden="true">
-              <svg viewBox="0 0 48 48" fill="none"><path d="M24 4v40M4 24h40" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+          <article class="service-card" role="listitem" tabindex="0" aria-label="General Consultation — tap to learn more">
+            <div class="service-card__flipper">
+              <div class="service-card__front">
+                <div class="service-card__icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none"><path d="M24 4v40M4 24h40" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></div>
+                <h3 class="service-card__title" data-i18n="s6.title">General Consultation</h3>
+                <span class="service-card__tag" data-i18n="s6.tag">In-person &amp; Virtual</span>
+                <span class="service-card__hint" aria-hidden="true" data-i18n="service.hint">Tap to learn more</span>
+              </div>
+              <div class="service-card__back">
+                <h3 class="service-card__title" data-i18n="s6.title">General Consultation</h3>
+                <p class="service-card__desc" data-i18n="s6.desc">Comprehensive health assessment, diagnosis, and personalized treatment plan for adults and children.</p>
+                <a href="#contacto" class="service-card__cta" data-i18n="service.book">Book now</a>
+              </div>
             </div>
-            <h3 class="service-card__title">Consulta General</h3>
-            <p class="service-card__desc">Evaluación integral del estado de salud, diagnóstico y plan de tratamiento personalizado para adultos y niños.</p>
-            <span class="service-card__tag">Presencial &amp; Virtual</span>
           </article>
 
-          <article class="service-card" role="listitem">
-            <div class="service-card__icon" aria-hidden="true">
-              <svg viewBox="0 0 48 48" fill="none"><rect x="8" y="12" width="32" height="26" rx="3" stroke="currentColor" stroke-width="2.5"/><path d="M16 12V9a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3" stroke="currentColor" stroke-width="2.5"/><path d="M24 20v8M20 24h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <article class="service-card" role="listitem" tabindex="0" aria-label="Preventive Medicine — tap to learn more">
+            <div class="service-card__flipper">
+              <div class="service-card__front">
+                <div class="service-card__icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none"><rect x="8" y="12" width="32" height="26" rx="3" stroke="currentColor" stroke-width="2.5"/><path d="M16 12V9a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3" stroke="currentColor" stroke-width="2.5"/><path d="M24 20v8M20 24h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
+                <h3 class="service-card__title" data-i18n="s7.title">Preventive Medicine</h3>
+                <span class="service-card__tag" data-i18n="s7.tag">Preventive</span>
+                <span class="service-card__hint" aria-hidden="true" data-i18n="service.hint">Tap to learn more</span>
+              </div>
+              <div class="service-card__back">
+                <h3 class="service-card__title" data-i18n="s7.title">Preventive Medicine</h3>
+                <p class="service-card__desc" data-i18n="s7.desc">Periodic health check-ups, vaccinations, screenings, and strategies to maintain your long-term health.</p>
+                <a href="#contacto" class="service-card__cta" data-i18n="service.book">Book now</a>
+              </div>
             </div>
-            <h3 class="service-card__title">Medicina Preventiva</h3>
-            <p class="service-card__desc">Chequeos médicos periódicos, vacunación, tamizajes y estrategias para mantener su salud a largo plazo.</p>
-            <span class="service-card__tag">Preventivo</span>
           </article>
 
-          <article class="service-card" role="listitem">
-            <div class="service-card__icon" aria-hidden="true">
-              <svg viewBox="0 0 48 48" fill="none"><path d="M10 38V20l14-12 14 12v18" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><rect x="18" y="28" width="12" height="10" rx="1" stroke="currentColor" stroke-width="2.5"/></svg>
+          <article class="service-card" role="listitem" tabindex="0" aria-label="Home Visit — tap to learn more">
+            <div class="service-card__flipper">
+              <div class="service-card__front">
+                <div class="service-card__icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none"><path d="M10 38V20l14-12 14 12v18" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><rect x="18" y="28" width="12" height="10" rx="1" stroke="currentColor" stroke-width="2.5"/></svg></div>
+                <h3 class="service-card__title" data-i18n="s8.title">Home Visit</h3>
+                <span class="service-card__tag" data-i18n="s8.tag">Home Care</span>
+                <span class="service-card__hint" aria-hidden="true" data-i18n="service.hint">Tap to learn more</span>
+              </div>
+              <div class="service-card__back">
+                <h3 class="service-card__title" data-i18n="s8.title">Home Visit</h3>
+                <p class="service-card__desc" data-i18n="s8.desc">Medical care at your home for patients with reduced mobility, elderly patients, or special situations.</p>
+                <a href="#contacto" class="service-card__cta" data-i18n="service.book">Book now</a>
+              </div>
             </div>
-            <h3 class="service-card__title">Visita Domiciliaria</h3>
-            <p class="service-card__desc">Atención médica en su hogar para pacientes con movilidad reducida, adultos mayores o situaciones especiales.</p>
-            <span class="service-card__tag">A domicilio</span>
           </article>
 
-          <article class="service-card" role="listitem">
-            <div class="service-card__icon" aria-hidden="true">
-              <svg viewBox="0 0 48 48" fill="none"><path d="M14 24h20M24 14v20" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><rect x="6" y="6" width="36" height="36" rx="6" stroke="currentColor" stroke-width="2.5"/></svg>
+          <article class="service-card" role="listitem" tabindex="0" aria-label="Virtual Consultation — tap to learn more">
+            <div class="service-card__flipper">
+              <div class="service-card__front">
+                <div class="service-card__icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none"><path d="M14 24h20M24 14v20" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><rect x="6" y="6" width="36" height="36" rx="6" stroke="currentColor" stroke-width="2.5"/></svg></div>
+                <h3 class="service-card__title" data-i18n="s9.title">Virtual Consultation</h3>
+                <span class="service-card__tag" data-i18n="s9.tag">Online</span>
+                <span class="service-card__hint" aria-hidden="true" data-i18n="service.hint">Tap to learn more</span>
+              </div>
+              <div class="service-card__back">
+                <h3 class="service-card__title" data-i18n="s9.title">Virtual Consultation</h3>
+                <p class="service-card__desc" data-i18n="s9.desc">Safe telemedicine consultation from the comfort of your home. Digital prescriptions and online follow-up.</p>
+                <a href="#contacto" class="service-card__cta" data-i18n="service.book">Book now</a>
+              </div>
             </div>
-            <h3 class="service-card__title">Consulta Virtual</h3>
-            <p class="service-card__desc">Teleconsulta médica segura desde la comodidad de su hogar. Recetas digitales y seguimiento en línea.</p>
-            <span class="service-card__tag">En línea</span>
           </article>
 
         </div>
@@ -303,43 +322,44 @@
     <section class="section schedule" id="horarios" aria-labelledby="schedule-title">
       <div class="container schedule__inner">
         <div class="schedule__text">
-          <span class="section__label text-red">Horarios</span>
-          <h2 class="section__title" id="schedule-title">¿Cuándo atendemos?</h2>
-          <p>Consultas con cita previa. Para emergencias, contáctenos directamente por WhatsApp.</p>
-          <a href="https://wa.me/50688888888?text=Hola%20Dra.%20Diana%2C%20quisiera%20agendar%20una%20cita."
+          <span class="section__label text-red" data-i18n="schedule.label">Hours</span>
+          <h2 class="section__title" id="schedule-title" data-i18n="schedule.title">When do we attend?</h2>
+          <p data-i18n="schedule.desc">Appointments required. For emergencies, contact us directly via WhatsApp.</p>
+          <a href="https://wa.me/50683493378?text=Hello%20Dr.%20Diana%2C%20I%20would%20like%20to%20book%20an%20appointment."
              class="btn btn--primary" target="_blank" rel="noopener noreferrer"
-             aria-label="Agendar cita por WhatsApp">
-            Agendar por WhatsApp
+             data-i18n="schedule.cta" data-i18n-attr="aria-label"
+             aria-label="Book appointment via WhatsApp">
+            <span data-i18n="schedule.cta">Book via WhatsApp</span>
           </a>
         </div>
         <div class="schedule__table-wrap">
-          <table class="schedule__table" aria-label="Horario de atención">
+          <table class="schedule__table" data-i18n="schedule.aria" data-i18n-attr="aria-label" aria-label="Office hours">
             <thead>
               <tr>
-                <th scope="col">Día</th>
-                <th scope="col">Horario</th>
-                <th scope="col">Modalidad</th>
+                <th scope="col" data-i18n="schedule.th.day">Day</th>
+                <th scope="col" data-i18n="schedule.th.hours">Hours</th>
+                <th scope="col" data-i18n="schedule.th.mode">Mode</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td>Lunes – Viernes</td>
-                <td>8:00 am – 5:00 pm</td>
-                <td><span class="badge badge--green">Presencial</span></td>
+                <td data-i18n="schedule.r1.day">Mon – Fri</td>
+                <td data-i18n="schedule.r1.hours">8:00 am – 5:00 pm</td>
+                <td><span class="badge badge--green" data-i18n="schedule.r1.mode">In-person</span></td>
               </tr>
               <tr>
-                <td>Lunes – Viernes</td>
-                <td>6:00 pm – 8:00 pm</td>
-                <td><span class="badge badge--blue">Virtual</span></td>
+                <td data-i18n="schedule.r2.day">Mon – Fri</td>
+                <td data-i18n="schedule.r2.hours">6:00 pm – 8:00 pm</td>
+                <td><span class="badge badge--blue" data-i18n="schedule.r2.mode">Virtual</span></td>
               </tr>
               <tr>
-                <td>Sábado</td>
-                <td>8:00 am – 12:00 pm</td>
-                <td><span class="badge badge--green">Presencial</span></td>
+                <td data-i18n="schedule.r3.day">Saturday</td>
+                <td data-i18n="schedule.r3.hours">8:00 am – 12:00 pm</td>
+                <td><span class="badge badge--green" data-i18n="schedule.r3.mode">In-person</span></td>
               </tr>
               <tr>
-                <td>Domingo</td>
-                <td colspan="2">Cerrado</td>
+                <td data-i18n="schedule.r4.day">Sunday</td>
+                <td colspan="2" data-i18n="schedule.r4.hours">Closed</td>
               </tr>
             </tbody>
           </table>
@@ -351,23 +371,19 @@
     <section class="section testimonials" id="testimonios" aria-labelledby="testimonials-title">
       <div class="container">
         <div class="section__header">
-          <span class="section__label text-red">Testimonios</span>
-          <h2 class="section__title" id="testimonials-title">Lo que dicen mis pacientes</h2>
-          <p class="section__desc">Experiencias reales de quienes confían en nuestra atención.</p>
+          <span class="section__label text-red" data-i18n="testimonials.label">Testimonials</span>
+          <h2 class="section__title" id="testimonials-title" data-i18n="testimonials.title">What my patients say</h2>
+          <p class="section__desc" data-i18n="testimonials.desc">Real experiences from those who trust our care.</p>
         </div>
-        <!-- Dynamic grid — filled by js/testimonials.js from reviews/reviews.json -->
-        <div class="testimonials__grid" id="testimonials-grid" role="list" aria-label="Reseñas de pacientes">
-          <!-- skeleton placeholders shown while loading -->
+        <div class="testimonials__grid" id="testimonials-grid" role="list" aria-label="Patient reviews">
           <div class="testimonial-skeleton" aria-hidden="true"></div>
           <div class="testimonial-skeleton" aria-hidden="true"></div>
           <div class="testimonial-skeleton" aria-hidden="true"></div>
         </div>
         <div class="testimonials__cta">
           <a href="review.html" class="btn btn--ghost testimonials__review-btn">
-            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" width="18" height="18">
-              <path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-            Dejar mi reseña
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" width="18" height="18"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <span data-i18n="testimonials.cta">Leave a review</span>
           </a>
         </div>
       </div>
@@ -377,111 +393,220 @@
     <section class="section contact" id="contacto" aria-labelledby="contact-title">
       <div class="container contact__inner">
         <div class="contact__info">
-          <span class="section__label text-red">Contacto</span>
-          <h2 class="section__title" id="contact-title">Agendar su cita</h2>
-          <p>Estamos listos para atenderle. Escríbanos o llámenos y con gusto coordinaremos su consulta.</p>
-
-          <ul class="contact__list" aria-label="Información de contacto">
+          <span class="section__label text-red" data-i18n="contact.label">Contact</span>
+          <h2 class="section__title" id="contact-title" data-i18n="contact.title">Book your appointment</h2>
+          <p data-i18n="contact.desc">We are ready to assist you. Write or call us and we will gladly coordinate your consultation.</p>
+          <ul class="contact__list" aria-label="Contact information">
             <li>
               <span class="contact-icon" aria-hidden="true">📍</span>
-              <div>
-                <strong>Ubicación</strong>
-                <span>San José, Costa Rica</span>
-              </div>
+              <div><strong data-i18n="contact.location">Location</strong><span>San José, Costa Rica</span></div>
             </li>
             <li>
               <span class="contact-icon" aria-hidden="true">📞</span>
-              <div>
-                <strong>Teléfono</strong>
-                <a href="tel:+50688888888">+506 8888-8888</a>
-              </div>
+              <div><strong data-i18n="contact.phone">Phone</strong><a href="tel:+50683493378">+506 8349-3378</a></div>
             </li>
             <li>
               <span class="contact-icon" aria-hidden="true">✉️</span>
-              <div>
-                <strong>Correo</strong>
-                <a href="mailto:contacto@docdianasanchez.com">contacto@docdianasanchez.com</a>
-              </div>
+              <div><strong data-i18n="contact.email">Email</strong><a href="mailto:contacto@docdianasanchez.com">contacto@docdianasanchez.com</a></div>
             </li>
             <li>
               <span class="contact-icon" aria-hidden="true">💬</span>
-              <div>
-                <strong>WhatsApp</strong>
-                <a href="https://wa.me/50688888888" target="_blank" rel="noopener noreferrer">+506 8888-8888</a>
-              </div>
+              <div><strong>WhatsApp</strong><a href="https://wa.me/50683493378" target="_blank" rel="noopener noreferrer">+506 8349-3378</a></div>
             </li>
           </ul>
         </div>
 
-        <!-- ACTION points to Formspree — replace YOUR_FORM_ID with your actual ID -->
-        <form
-          class="contact__form"
-          id="contact-form"
-          action="https://api.docdianasanchez.com/api/bookings"
-          method="POST"
-          novalidate
-          aria-label="Formulario de contacto"
-        >
-          <!-- Hidden fields for Formspree metadata -->
-          <input type="hidden" name="_subject" value="Nueva solicitud de cita – Dra. Diana Sánchez" />
-          <input type="hidden" name="_language" value="es" />
+        <form class="contact__form" id="contact-form" action="https://api.docdianasanchez.com/api/bookings" method="POST" novalidate aria-label="Contact form">
+          <input type="hidden" name="_subject" value="New appointment request – Dr. Diana Sánchez" />
+          <input type="hidden" name="_language" value="en" />
           <input type="text" name="_gotcha" style="display:none" tabindex="-1" autocomplete="off" />
+          <input type="hidden" name="gps_coordinates" id="gps-coords" value="" />
 
-          <div class="form-group">
-            <label for="name">Nombre completo <span aria-hidden="true" class="required">*</span></label>
-            <input type="text" id="name" name="name" placeholder="Su nombre" required autocomplete="name" />
-            <span class="field-error" role="alert" aria-live="polite"></span>
+          <!-- ── Personal info ── -->
+          <div class="form-section">
+            <div class="form-section__label" data-i18n="form.section.personal">Personal information</div>
+            <div class="form-group">
+              <label for="name" data-i18n="form.name">Full name <span class="required" aria-hidden="true">*</span></label>
+              <input type="text" id="name" name="name" data-i18n-ph="form.name.ph" placeholder="Your name" required autocomplete="name" />
+              <span class="field-error" role="alert" aria-live="polite"></span>
+            </div>
+            <div class="form-group">
+              <label for="patient-id" data-i18n="form.id">ID / Cédula</label>
+              <input type="text" id="patient-id" name="patient_id" data-i18n-ph="form.id.ph" placeholder="e.g. 1-1234-5678" autocomplete="off" />
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="phone" data-i18n="form.phone">Phone <span class="required" aria-hidden="true">*</span></label>
+                <input type="tel" id="phone" name="phone" placeholder="+506 8349-3378" required autocomplete="tel" />
+                <span class="field-error" role="alert" aria-live="polite"></span>
+              </div>
+              <div class="form-group" id="email-group">
+                <label for="email">
+                  <span data-i18n="form.email">Email</span>
+                  <span class="form-required-badge" id="email-required-badge" hidden data-i18n="form.required.badge">required</span>
+                </label>
+                <input type="email" id="email" name="email" placeholder="your@email.com" autocomplete="email" />
+                <span class="field-error" role="alert" aria-live="polite"></span>
+              </div>
+            </div>
           </div>
-          <div class="form-group">
-            <label for="phone">Teléfono <span aria-hidden="true" class="required">*</span></label>
-            <input type="tel" id="phone" name="phone" placeholder="+506 8888-8888" required autocomplete="tel" />
-            <span class="field-error" role="alert" aria-live="polite"></span>
+
+          <!-- ── Appointment type ── -->
+          <div class="form-section">
+            <div class="form-section__label">
+              <span data-i18n="form.channel">Appointment type</span>
+              <span class="required" aria-hidden="true">*</span>
+            </div>
+            <div class="form-channel-grid" role="radiogroup" aria-label="Appointment type">
+              <label class="form-channel-card" for="channel-virtual">
+                <input type="radio" name="channel" value="virtual" id="channel-virtual" />
+                <div class="form-channel-card__inner">
+                  <div class="form-channel-card__icon">
+                    <svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><rect x="4" y="10" width="32" height="22" rx="3" stroke="currentColor" stroke-width="2.5"/><path d="M36 18l8-5v14l-8-5v-4Z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><path d="M14 36h20M24 32v4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+                  </div>
+                  <div class="form-channel-card__text">
+                    <strong data-i18n="form.channel.virtual">Virtual</strong>
+                    <small data-i18n="form.channel.virtual.sub">Video call or phone</small>
+                  </div>
+                  <span class="form-channel-card__check" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 4" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                </div>
+              </label>
+              <label class="form-channel-card" for="channel-express">
+                <input type="radio" name="channel" value="express" id="channel-express" />
+                <div class="form-channel-card__inner">
+                  <div class="form-channel-card__icon">
+                    <svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M24 4L6 18v26h12V30h12v14h12V18L24 4Z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/></svg>
+                  </div>
+                  <div class="form-channel-card__text">
+                    <strong data-i18n="form.channel.express">Express to Home</strong>
+                    <small data-i18n="form.channel.express.sub">Doctor visits you</small>
+                  </div>
+                  <span class="form-channel-card__check" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 4" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                </div>
+              </label>
+            </div>
+            <span class="field-error" id="channel-error" role="alert" aria-live="polite"></span>
           </div>
-          <div class="form-group">
-            <label for="email">Correo electrónico</label>
-            <input type="email" id="email" name="email" placeholder="su@correo.com" autocomplete="email" />
-            <span class="field-error" role="alert" aria-live="polite"></span>
+          <!-- ── VIRTUAL: Platform cards ── -->
+          <div class="form-section form-conditional" id="field-virtual-platform" hidden>
+            <div class="form-section__label">
+              <span data-i18n="form.platform">Platform</span>
+              <span class="required" aria-hidden="true">*</span>
+            </div>
+            <input type="hidden" id="virtual-platform" name="virtual_platform" value="" />
+            <div class="form-platform-grid">
+              <button type="button" class="form-platform-card" data-platform="WhatsApp" aria-pressed="false">
+                <span class="form-platform-card__icon"><svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><circle cx="24" cy="24" r="22" fill="#25D366"/><path d="M24 11C16.8 11 11 16.8 11 24c0 2.6.7 5 1.9 7.1L11 37l6.1-1.8A13 13 0 0 0 24 37c7.2 0 13-5.8 13-13S31.2 11 24 11Z" fill="white"/><path d="M19.5 17.5c-.4-.9-.7-.9-1.1-.9H17c-.4 0-.9.1-1.4.6-.5.5-1.8 1.8-1.8 4.4s1.9 5.1 2.1 5.4c.3.4 3.6 5.8 9 7.9 4.4 1.7 5.3 1.4 6.3 1.3 1-.1 3.1-1.3 3.5-2.5.4-1.2.4-2.2.3-2.4-.2-.3-.5-.4-1-.6-.5-.2-3-1.5-3.4-1.6-.5-.2-.8-.3-1.1.3-.4.5-1.3 1.6-1.6 2-.3.3-.6.4-1.1.1-.5-.3-2.1-.8-4-2.5-1.5-1.3-2.5-3-2.8-3.5-.3-.5 0-.8.2-1 .2-.2.5-.6.7-.9.3-.3.3-.5.5-.9.2-.3.1-.7-.1-.9-.1-.2-.9-2.5-1.3-3.3Z" fill="#25D366"/></svg></span>
+                <span class="form-platform-card__name">WhatsApp</span>
+              </button>
+              <button type="button" class="form-platform-card" data-platform="Zoom" aria-pressed="false">
+                <span class="form-platform-card__icon"><svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><rect width="48" height="48" rx="12" fill="#2D8CFF"/><path d="M7 17h20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V19a2 2 0 0 1 2-2Z" fill="white"/><path d="M29 21.5 41 15v18L29 26.5v-5Z" fill="white"/></svg></span>
+                <span class="form-platform-card__name">Zoom</span>
+              </button>
+              <button type="button" class="form-platform-card" data-platform="Google Meet" aria-pressed="false">
+                <span class="form-platform-card__icon"><svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><rect width="48" height="48" rx="12" fill="#f8f9fa"/><path d="M35.2 24.4c0-.8-.1-1.6-.2-2.4H24v4.6h6.3a5.4 5.4 0 0 1-2.3 3.5v2.9h3.7c2.2-2 3.5-5 3.5-8.6Z" fill="#4285F4"/><path d="M24 36c3.2 0 5.8-1 7.7-2.8l-3.7-2.9c-1 .7-2.4 1.1-4 1.1-3 0-5.6-2-6.5-4.8h-3.9v3A11.9 11.9 0 0 0 24 36Z" fill="#34A853"/><path d="M17.5 26.6a7.2 7.2 0 0 1 0-5.2v-3h-3.9a12 12 0 0 0 0 11.2l3.9-3Z" fill="#FBBC05"/><path d="M24 16.6c1.7 0 3.2.6 4.4 1.7l3.3-3.3A11.9 11.9 0 0 0 13.6 18l3.9 3c.9-2.7 3.5-4.4 6.5-4.4Z" fill="#EA4335"/></svg></span>
+                <span class="form-platform-card__name">Meet</span>
+              </button>
+              <button type="button" class="form-platform-card" data-platform="Phone Call" aria-pressed="false">
+                <span class="form-platform-card__icon"><svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><rect width="48" height="48" rx="12" fill="#1c1c1e"/><path d="M16 13h5l2.5 7-3.5 2a15 15 0 0 0 6 6l2-3.5 7 2.5v5A2 2 0 0 1 33 34C17 33 13 17 14 15a2 2 0 0 1 2-2Z" stroke="#0d9488" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                <span class="form-platform-card__name" data-i18n="form.platform.phone">Phone</span>
+              </button>
+            </div>
+            <span class="field-error" id="platform-error" role="alert" aria-live="polite"></span>
           </div>
-          <div class="form-group">
-            <label for="preferred-date">Fecha preferida</label>
-            <input type="date" id="preferred-date" name="preferred_date" min="" autocomplete="off" />
+
+          <!-- ── EXPRESS: GPS + Address ── -->
+          <div class="form-section form-conditional" id="field-express-address" hidden>
+            <div class="form-section__label">
+              <span data-i18n="form.address.section">Your location</span>
+              <span class="required" aria-hidden="true">*</span>
+            </div>
+            <!-- GPS detector -->
+            <div class="form-gps-box" id="gps-wrap">
+              <div class="form-gps-box__left">
+                <div class="form-gps-box__icon" aria-hidden="true">
+                  <svg viewBox="0 0 32 32" fill="none" width="28" height="28"><circle cx="16" cy="16" r="4" stroke="currentColor" stroke-width="2"/><path d="M16 4v4M16 24v4M4 16h4M24 16h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="16" r="11" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 3"/></svg>
+                </div>
+                <div>
+                  <div class="form-gps-box__title" data-i18n="form.gps.title">Precise location</div>
+                  <div class="form-gps-box__sub" id="gps-sub-text" data-i18n="form.gps.sub">Tap to auto-fill your coordinates</div>
+                </div>
+              </div>
+              <button type="button" class="form-gps-btn" id="gps-btn" aria-label="Get my location">
+                <svg viewBox="0 0 20 20" fill="none" width="16" height="16" aria-hidden="true"><circle cx="10" cy="10" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                <span id="gps-btn-text" data-i18n="form.gps.btn">Detect</span>
+              </button>
+            </div>
+            <div class="form-gps-coords" id="gps-result" hidden>
+              <svg viewBox="0 0 16 16" fill="none" width="14" height="14" aria-hidden="true"><path d="M2 8l3.5 3.5L14 3" stroke="#0d9488" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span id="gps-result-text"></span>
+              <a href="#" id="gps-map-link" target="_blank" rel="noopener noreferrer" data-i18n="form.gps.view">View on map</a>
+            </div>
+            <div class="form-group" style="margin-top:12px">
+              <label for="address" data-i18n="form.address">Street / Address details <span class="required" aria-hidden="true">*</span></label>
+              <input type="text" id="address" name="address" data-i18n-ph="form.address.ph" placeholder="Street, building, neighborhood" autocomplete="street-address" />
+              <span class="field-error" id="address-error" role="alert" aria-live="polite"></span>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="address-city" data-i18n="form.address.city">City / Canton</label>
+                <input type="text" id="address-city" name="address_city" placeholder="San José" autocomplete="address-level2" />
+              </div>
+              <div class="form-group">
+                <label for="address-province" data-i18n="form.address.province">Province</label>
+                <select id="address-province" name="address_province">
+                  <option value="">—</option>
+                  <option>San José</option><option>Alajuela</option><option>Cartago</option>
+                  <option>Heredia</option><option>Guanacaste</option><option>Puntarenas</option><option>Limón</option>
+                </select>
+              </div>
+            </div>
           </div>
-          <div class="form-group">
-            <label for="preferred-time">Hora preferida</label>
-            <select id="preferred-time" name="preferred_time">
-              <option value="">Seleccione una hora</option>
-              <option value="08:00">8:00 am</option>
-              <option value="09:00">9:00 am</option>
-              <option value="10:00">10:00 am</option>
-              <option value="11:00">11:00 am</option>
-              <option value="14:00">2:00 pm</option>
-              <option value="15:00">3:00 pm</option>
-              <option value="16:00">4:00 pm</option>
-            </select>
+
+          <!-- ── Service + Schedule ── -->
+          <div class="form-section">
+            <div class="form-section__label" data-i18n="form.section.schedule">Consultation details</div>
+            <div class="form-group">
+              <label for="service" data-i18n="form.service">Service</label>
+              <select id="service" name="service">
+                <option value="" data-i18n="form.service.ph">Select a service</option>
+                <option value="Consulta General" data-i18n="form.s1">General Consultation</option>
+                <option value="Medicina Preventiva" data-i18n="form.s2">Preventive Medicine</option>
+                <option value="Enfermedades Crónicas" data-i18n="form.s3">Chronic Diseases</option>
+                <option value="Atención Pediátrica" data-i18n="form.s4">Pediatric Care</option>
+                <option value="Consulta Virtual" data-i18n="form.s5">Virtual Consultation</option>
+                <option value="Visita Domiciliaria" data-i18n="form.s6">Home Visit</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="preferred-date" data-i18n="form.date">Preferred date</label>
+                <input type="date" id="preferred-date" name="preferred_date" min="" autocomplete="off" />
+              </div>
+              <div class="form-group">
+                <label for="preferred-time" data-i18n="form.time">Preferred time</label>
+                <select id="preferred-time" name="preferred_time">
+                  <option value="" data-i18n="form.time.ph">Select a time</option>
+                  <option value="08:00">8:00 am</option><option value="09:00">9:00 am</option>
+                  <option value="10:00">10:00 am</option><option value="11:00">11:00 am</option>
+                  <option value="14:00">2:00 pm</option><option value="15:00">3:00 pm</option>
+                  <option value="16:00">4:00 pm</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="message" data-i18n="form.message">Notes <span class="required" aria-hidden="true">*</span></label>
+              <textarea id="message" name="message" rows="3" data-i18n-ph="form.message.ph" placeholder="Briefly describe your consultation or appointment reason" required></textarea>
+              <span class="field-error" role="alert" aria-live="polite"></span>
+            </div>
           </div>
-          <div class="form-group">
-            <label for="service">Tipo de consulta</label>
-            <select id="service" name="service">
-              <option value="">Seleccione un servicio</option>
-              <option value="Consulta General">Consulta General</option>
-              <option value="Medicina Preventiva">Medicina Preventiva</option>
-              <option value="Enfermedades Crónicas">Enfermedades Crónicas</option>
-              <option value="Atención Pediátrica">Atención Pediátrica</option>
-              <option value="Consulta Virtual">Consulta Virtual</option>
-              <option value="Visita Domiciliaria">Visita Domiciliaria</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="message">Mensaje <span aria-hidden="true" class="required">*</span></label>
-            <textarea id="message" name="message" rows="4" placeholder="Describa brevemente su consulta o motivo de cita" required></textarea>
-            <span class="field-error" role="alert" aria-live="polite"></span>
-          </div>
-          <button type="submit" class="btn btn--primary btn--full" id="form-submit-btn">
-            Enviar solicitud
-          </button>
-          <p class="form-success" id="form-success" role="status" aria-live="polite" hidden>
-            ✔ Su solicitud fue enviada. Le contactaremos para confirmar su cita.
+
+          <button type="submit" class="btn btn--primary btn--full" id="form-submit-btn" data-i18n="form.submit">Send request</button>
+          <p class="form-success" id="form-success" role="status" aria-live="polite" hidden data-i18n="form.success">
+            ✔ Your request was sent. We will contact you to confirm your appointment.
           </p>
+        </form>
+
         </form>
       </div>
     </section>
@@ -493,24 +618,21 @@
     <div class="container footer__inner">
       <div class="footer__brand">
         <span class="logo-cross text-red" aria-hidden="true">✚</span>
-        <span>Dra. Diana Carolina Sánchez Dávila</span>
-        <small>Médico General · Costa Rica</small>
+        <span>Dr. Diana Carolina Sánchez Dávila</span>
+        <small data-i18n="footer.tagline">Surgeon &amp; General Physician · Costa Rica</small>
       </div>
-      <nav class="footer__nav" aria-label="Navegación del pie de página">
-        <a href="#inicio">Inicio</a>
-        <a href="#sobre-mi">Sobre mí</a>
-        <a href="#servicios">Servicios</a>
-        <a href="#horarios">Horarios</a>
-        <a href="#contacto">Contacto</a>
+      <nav class="footer__nav" aria-label="Footer navigation">
+        <a href="#inicio"    data-i18n="footer.nav.home">Home</a>
+        <a href="#sobre-mi"  data-i18n="footer.nav.about">About</a>
+        <a href="#servicios" data-i18n="footer.nav.services">Services</a>
+        <a href="#horarios"  data-i18n="footer.nav.schedule">Hours</a>
+        <a href="#contacto"  data-i18n="footer.nav.contact">Contact</a>
       </nav>
-      <p class="footer__copy">
-        &copy; <span id="year"></span> Dra. Diana Sánchez · docdianasanchez.com
-      </p>
+      <p class="footer__copy">&copy; <span id="year"></span> Dr. Diana Sánchez · docdianasanchez.com</p>
     </div>
   </footer>
 
-  <!-- Back to top -->
-  <button class="back-top" id="back-top" aria-label="Volver arriba" hidden>↑</button>
+  <button class="back-top" id="back-top" data-i18n="backtop.aria" data-i18n-attr="aria-label" aria-label="Back to top" hidden>↑</button>
 
   <script src="js/main.js"></script>
   <script src="js/reviews.js"></script>
