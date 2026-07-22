@@ -231,24 +231,28 @@
     const formData = new FormData(form);
     const payload  = Object.fromEntries(formData.entries());
 
-    // Always save locally so admin can see it regardless of Formspree
+    // Always save locally so admin can see it regardless of backend
     saveAppointmentLocally(payload);
 
-    // Check if Formspree is configured
+    // Post to the booking backend (Cloudflare Tunnel -> Flask)
     const action = form.getAttribute('action') || '';
-    const hasFormspree = action.includes('formspree.io') && !action.includes('YOUR_FORM_ID');
+    const isBackend = action.includes('docdianasanchez.com/api/bookings');
 
-    if (hasFormspree) {
+    if (isBackend) {
       try {
         const res = await fetch(action, {
           method:  'POST',
           headers: { 'Accept': 'application/json' },
           body:    formData
         });
-
-        if (!res.ok) throw new Error('Formspree error ' + res.status);
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || data.ok === false) {
+          throw new Error(data.error || ('Error ' + res.status));
+        }
       } catch (err) {
-        console.warn('Formspree submission failed, saved locally only.', err);
+        // Keep the success message (data is saved locally + retried later),
+        // but log so we can diagnose. Real failure still shows confirmation to user.
+        console.warn('Booking backend submission failed; saved locally only.', err);
       }
     }
 
