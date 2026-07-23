@@ -1,0 +1,220 @@
+#!/usr/bin/env python3
+"""
+Patch to add GET method to /api/bookings endpoint
+This allows the frontend admin panel to fetch bookings
+"""
+
+# Add this code after line 71 (after the existing POST /api/bookings route)
+# Insert before line 150 (@app.route("/api/bookings.csv"))
+
+NEW_CODE = '''
+@app.route("/api/bookings", methods=["GET"])
+def get_bookings():
+    """Public endpoint to fetch bookings - no auth required for frontend admin"""
+    try:
+        status_filter = request.args.get('status', '').strip()
+        limit = int(request.args.get('limit', 100))
+        
+        conn = _db()
+        cur = conn.cursor()
+        
+        # Fetch bookings with all device tracking fields
+        query = """
+            SELECT 
+                id, name, patient_id, phone, email, channel, virtual_platform,
+                address, address_city, address_province, gps_coordinates,
+                service, preferred_date, preferred_time, message, status,
+                ip_address, ip_country, ip_city, device_type, device_brand,
+                device_model, device_os, device_browser, screen_size,
+                user_language, user_timezone, connection_type,
+                created_at, updated_at
+            FROM bookings 
+            WHERE 1=1
+        """
+        params = []
+        
+        if status_filter:
+            query += " AND status = %s"
+            params.append(status_filter)
+        
+        query += " ORDER BY created_at DESC LIMIT %s"
+        params.append(limit)
+        
+        cur.execute(query, params)
+        cols = [d[0] for d in cur.description]
+        rows = cur.fetchall()
+        
+        bookings = []
+        for row in rows:
+            booking = dict(zip(cols, row))
+            # Convert dates to ISO format
+            if booking.get('created_at'):
+                booking['created_at'] = booking['created_at'].isoformat()
+            if booking.get('updated_at'):
+                booking['updated_at'] = booking['updated_at'].isoformat()
+            if booking.get('preferred_date'):
+                booking['preferred_date'] = str(booking['preferred_date'])
+            if booking.get('preferred_time'):
+                booking['preferred_time'] = str(booking['preferred_time'])
+            bookings.append(booking)
+        
+        cur.close()
+        conn.close()
+        
+        return jsonify({
+            'ok': True,
+            'bookings': bookings,
+            'count': len(bookings)
+        })
+    except Exception as e:
+        return jsonify({
+            'ok': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route("/api/bookings/<int:booking_id>", methods=["GET"])
+def get_booking(booking_id):
+    """Get a single booking by ID"""
+    try:
+        conn = _db()
+        cur = conn.cursor()
+        
+        query = """
+            SELECT 
+                id, name, patient_id, phone, email, channel, virtual_platform,
+                address, address_city, address_province, gps_coordinates,
+                service, preferred_date, preferred_time, message, status,
+                ip_address, ip_country, ip_city, device_type, device_brand,
+                device_model, device_os, device_browser, screen_size,
+                user_language, user_timezone, connection_type,
+                created_at, updated_at
+            FROM bookings 
+            WHERE id = %s
+        """
+        
+        cur.execute(query, (booking_id,))
+        cols = [d[0] for d in cur.description]
+        row = cur.fetchone()
+        
+        if not row:
+            cur.close()
+            conn.close()
+            return jsonify({
+                'ok': False,
+                'error': 'Booking not found'
+            }), 404
+        
+        booking = dict(zip(cols, row))
+        
+        # Convert dates
+        if booking.get('created_at'):
+            booking['created_at'] = booking['created_at'].isoformat()
+        if booking.get('updated_at'):
+            booking['updated_at'] = booking['updated_at'].isoformat()
+        if booking.get('preferred_date'):
+            booking['preferred_date'] = str(booking['preferred_date'])
+        if booking.get('preferred_time'):
+            booking['preferred_time'] = str(booking['preferred_time'])
+        
+        cur.close()
+        conn.close()
+        
+        return jsonify({
+            'ok': True,
+            'booking': booking
+        })
+    except Exception as e:
+        return jsonify({
+            'ok': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route("/api/bookings/<int:booking_id>", methods=["PATCH"])
+def update_booking(booking_id):
+    """Update booking status"""
+    try:
+        data = request.get_json(silent=True) or {}
+        status = data.get('status', '').strip()
+        
+        if not status:
+            return jsonify({
+                'ok': False,
+                'error': 'Status is required'
+            }), 400
+        
+        if status not in ['pending', 'confirmed', 'cancelled', 'completed']:
+            return jsonify({
+                'ok': False,
+                'error': 'Invalid status'
+            }), 400
+        
+        conn = _db()
+        cur = conn.cursor()
+        
+        query = "UPDATE bookings SET status = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s"
+        cur.execute(query, (status, booking_id))
+        conn.commit()
+        
+        if cur.rowcount == 0:
+            cur.close()
+            conn.close()
+            return jsonify({
+                'ok': False,
+                'error': 'Booking not found'
+            }), 404
+        
+        cur.close()
+        conn.close()
+        
+        return jsonify({
+            'ok': True,
+            'message': 'Booking updated successfully'
+        })
+    except Exception as e:
+        return jsonify({
+            'ok': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route("/api/bookings/<int:booking_id>", methods=["DELETE"])
+def delete_booking(booking_id):
+    """Delete a booking"""
+    try:
+        conn = _db()
+        cur = conn.cursor()
+        
+        query = "DELETE FROM bookings WHERE id = %s"
+        cur.execute(query, (booking_id,))
+        conn.commit()
+        
+        if cur.rowcount == 0:
+            cur.close()
+            conn.close()
+            return jsonify({
+                'ok': False,
+                'error': 'Booking not found'
+            }), 404
+        
+        cur.close()
+        conn.close()
+        
+        return jsonify({
+            'ok': True,
+            'message': 'Booking deleted successfully'
+        })
+    except Exception as e:
+        return jsonify({
+            'ok': False,
+            'error': str(e)
+        }), 500
+
+'''
+
+print("Copy this code and add it to app.py after the POST /api/bookings route")
+print("Insert it before the @app.route('/api/bookings.csv') route (around line 150)")
+print("\n" + "="*80)
+print(NEW_CODE)
+print("="*80)

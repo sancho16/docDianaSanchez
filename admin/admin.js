@@ -348,6 +348,14 @@
         ${status === 'confirmed' ? `
           <button class="adm-btn adm-btn--danger adm-btn--sm" data-action="cancel-appt" data-id="${esc(appt.id)}">✕ Cancelar</button>
         ` : ''}
+        <button class="adm-btn adm-btn--primary adm-btn--sm" data-action="open-medical" data-id="${esc(appt.id)}"
+          title="Abrir historial médico en nueva pestaña" aria-label="Abrir historial médico">
+          <svg viewBox="0 0 20 20" fill="none" width="14" height="14" aria-hidden="true">
+            <path d="M4 6h12v10a2 2 0 01-2 2H6a2 2 0 01-2-2V6z" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M8 6V4a2 2 0 012-2h0a2 2 0 012 2v2M8 10h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          Historial
+        </button>
         <button class="adm-btn adm-btn--ghost adm-btn--sm adm-calendar-btn" data-action="calendar" data-id="${esc(appt.id)}"
           title="Agregar a Apple Calendar" aria-label="Descargar evento de calendario">
           <svg viewBox="0 0 20 20" fill="none" width="14" height="14" aria-hidden="true">
@@ -380,7 +388,7 @@
       card._singleTimer = setTimeout(() => {
         card._singleTimer = null;
         const appt = appointments.find(a => a.id === card.dataset.id);
-        if (appt) openDetailModal(appt);
+        if (appt) openAppointmentInNewTab(appt);
       }, 260);
     });
 
@@ -407,11 +415,19 @@
     const card = e.currentTarget;
     const appt = appointments.find(a => a.id === card.dataset.id);
     if (!appt) return;
-    openDetailModal(appt);
+    openAppointmentInNewTab(appt);
   }
 
   function showDetailModal(appt) {
     openDetailModal(appt);
+  }
+
+  function openAppointmentInNewTab(appt) {
+    // Open medical records page in new tab with booking ID
+    // Use relative path since admin pages are served from GitHub Pages
+    const bookingId = appt.dbId || appt.id;
+    const medicalRecordsUrl = `medical-records.html?booking_id=${bookingId}`;
+    window.open(medicalRecordsUrl, '_blank', 'width=1400,height=900');
   }
 
   function openDetailModal(appt) {
@@ -558,6 +574,10 @@
 
     if (action === 'calendar' && appt) {
       downloadICS(appt);
+    }
+
+    if (action === 'open-medical' && appt) {
+      openAppointmentInNewTab(appt);
     }
   }
 

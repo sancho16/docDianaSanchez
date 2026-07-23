@@ -60,6 +60,7 @@ pre, code { font-family: 'Courier New', monospace; }
   min-width: 20px; height: 20px; padding: 0 6px;
   background: rgba(192,57,43,0.2); color: var(--red-light);
   border-radius: 100px; font-size: 0.72rem; font-weight: 700;
+  aspect-ratio: 1 / 1; /* Ensure perfect circle when content is square */
 }
 .adm-badge--green { background: rgba(46,204,113,0.15); color: var(--green); }
 

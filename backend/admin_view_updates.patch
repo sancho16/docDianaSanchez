@@ -1,0 +1,92 @@
+--- This patch adds:
+--- 1. Perfect circle charts (aspect-ratio: 1/1 for doughnut and pie charts)
+--- 2. Clickable appointment rows that open medical records in new tab
+--- 3. Flip animation on double-click for quick view
+
+Search for: .panel canvas{display:block;width:100% !important;height:300px !important}
+
+Replace with:
+ .panel canvas{display:block;width:100% !important;max-height:400px !important}
+ .panel.chart-circle{display:flex;align-items:center;justify-content:center}
+ .panel.chart-circle canvas{aspect-ratio:1/1;width:min(100%,400px) !important;height:auto !important}
+
+---
+
+Search for: tbody tr:hover{background:rgba(255,255,255,0.03)}
+
+Replace with:
+ tbody tr{cursor:pointer;transition:all 0.3s ease;position:relative}
+ tbody tr:hover{background:rgba(255,255,255,0.08);transform:scale(1.01)}
+ tbody tr.flipped{transform:rotateX(180deg)}
+ .row-detail{display:none;position:absolute;top:0;left:0;right:0;bottom:0;background:var(--glass-bg);backdrop-filter:blur(24px);border-radius:12px;padding:1rem;transform:rotateX(180deg);z-index:10}
+ tbody tr.flipped .row-detail{display:block}
+
+---
+
+Search for: <div class="panel">
+      <h2 data-en="By Status" data-es="Por estado">By Status</h2>
+      <canvas id="cStatus"></canvas>
+    </div>
+
+Replace with:
+    <div class="panel chart-circle">
+      <h2 data-en="By Status" data-es="Por estado">By Status</h2>
+      <canvas id="cStatus"></canvas>
+    </div>
+
+---
+
+Search for: <div class="panel">
+      <h2 data-en="Real vs. Dummy" data-es="Reales vs. Dummy">Real vs. Dummy</h2>
+      <canvas id="cMix"></canvas>
+    </div>
+
+Replace with:
+    <div class="panel chart-circle">
+      <h2 data-en="Real vs. Dummy" data-es="Reales vs. Dummy">Real vs. Dummy</h2>
+      <canvas id="cMix"></canvas>
+    </div>
+
+---
+
+Search for the row generation in the load() function:
+    rows.innerHTML=d.rows.map(r=>`
+      <tr class="${r.is_dummy?'sel':''}">
+
+Replace with:
+    rows.innerHTML=d.rows.map(r=>`
+      <tr class="${r.is_dummy?'sel':''}" onclick="openMedicalRecord(${r.id}, event)" ondblclick="toggleFlip(event)" data-booking-id="${r.id}">
+
+---
+
+Add this JavaScript before the charts() function:
+
+function openMedicalRecord(bookingId, event) {
+  // Prevent if clicking on select/dropdown
+  if (event.target.tagName === 'SELECT' || event.target.closest('select')) {
+    return;
+  }
+  const row = event.currentTarget;
+  // Single click opens medical records in new tab after delay
+  if (row._clickTimer) {
+    clearTimeout(row._clickTimer);
+    row._clickTimer = null;
+    return; // This is a double-click, don't open
+  }
+  row._clickTimer = setTimeout(() => {
+    row._clickTimer = null;
+    const medicalRecordsUrl = window.location.origin + '/admin/medical-records?booking_id=' + bookingId;
+    window.open(medicalRecordsUrl, '_blank', 'width=1400,height=900');
+  }, 300);
+}
+
+function toggleFlip(event) {
+  event.stopPropagation();
+  const row = event.currentTarget;
+  if (row._clickTimer) {
+    clearTimeout(row._clickTimer);
+    row._clickTimer = null;
+  }
+  row.classList.toggle('flipped');
+}
+
