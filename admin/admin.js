@@ -10,6 +10,7 @@
   const ADMIN_PASS  = 'diana2024';
   const SESSION_KEY = 'dds_admin_session';
   const APPT_KEY    = 'dds_appointments';
+  const API_URL     = 'https://api.docdianasanchez.com';
 
   /* ── State ── */
   let approvedReviews = [];
@@ -84,7 +85,7 @@
   async function loadAll() {
     pendingReviews  = ReviewsDB.getPending();
     approvedReviews = await ReviewsDB.fetchApproved(true);
-    appointments    = loadAppointments();
+    appointments    = await loadAppointments();
     renderAll();
   }
 
@@ -97,25 +98,136 @@
   }
 
   /* ══════════════════════════════════════════════
-     APPOINTMENTS — localStorage CRUD
+     APPOINTMENTS — API + localStorage CRUD
   ══════════════════════════════════════════════ */
-  function loadAppointments() {
-    try { return JSON.parse(localStorage.getItem(APPT_KEY) || '[]'); }
-    catch { return []; }
+  async function loadAppointmentsFromAPI() {
+    try {
+      const response = await fetch(`${API_URL}/api/bookings`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`API returned ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.ok && data.bookings) {
+        // Transform API data to match our local format
+        return data.bookings.map(booking => ({
+          id: 'b' + booking.id,
+          dbId: booking.id,
+          name: booking.name,
+          patient_id: booking.patient_id || '',
+          phone: booking.phone,
+          email: booking.email || '',
+          channel: booking.channel || '',
+          platform: booking.virtual_platform || '',
+          address: booking.address || '',
+          service: booking.service || '',
+          date: booking.preferred_date || '',
+          time: booking.preferred_time || '',
+          message: booking.message || '',
+          status: booking.status || 'pending',
+          submitted: booking.created_at || new Date().toISOString(),
+          tracking: {
+            ip: booking.ip_address || 'unknown',
+            ipCountry: booking.ip_country || 'unknown',
+            ipCity: booking.ip_city || 'unknown',
+            deviceType: booking.device_type || 'unknown',
+            deviceBrand: booking.device_brand || 'unknown',
+            deviceModel: booking.device_model || 'unknown',
+            os: booking.device_os || 'unknown',
+            browser: booking.device_browser || 'unknown',
+            screenSize: booking.screen_size || 'unknown',
+            language: booking.user_language || 'unknown',
+            timezone: booking.user_timezone || 'unknown',
+            connection: booking.connection_type || 'unknown',
+            capturedAt: booking.created_at
+          }
+        }));
+      }
+
+      return [];
+    } catch (err) {
+      console.warn('Failed to load appointments from API, falling back to localStorage:', err);
+      return null; // Signal fallback to localStorage
+    }
+  }
+
+  async function loadAppointments() {
+    // Try to load from API first
+    const apiData = await loadAppointmentsFromAPI();
+    
+    if (apiData !== null) {
+      // Successfully loaded from API
+      return apiData;
+    }
+
+    // Fallback to localStorage
+    try {
+      return JSON.parse(localStorage.getItem(APPT_KEY) || '[]');
+    } catch {
+      return [];
+    }
   }
 
   function saveAppointments(list) {
     localStorage.setItem(APPT_KEY, JSON.stringify(list));
   }
 
-  function updateAppointmentStatus(id, status) {
+  async function updateAppointmentStatus(id, status) {
+    const appointment = appointments.find(a => a.id === id);
+    if (!appointment) return;
+
+    // Update locally
     appointments = appointments.map(a => a.id === id ? { ...a, status } : a);
     saveAppointments(appointments);
+
+    // Update in API if available
+    if (appointment.dbId) {
+      try {
+        const response = await fetch(`${API_URL}/api/bookings/${appointment.dbId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ status }),
+        });
+
+        if (!response.ok) {
+          console.warn('Failed to update appointment on server');
+        }
+      } catch (err) {
+        console.warn('API update failed:', err);
+      }
+    }
   }
 
-  function deleteAppointment(id) {
+  async function deleteAppointment(id) {
+    const appointment = appointments.find(a => a.id === id);
+    
+    // Delete locally
     appointments = appointments.filter(a => a.id !== id);
     saveAppointments(appointments);
+
+    // Delete from API if available
+    if (appointment && appointment.dbId) {
+      try {
+        const response = await fetch(`${API_URL}/api/bookings/${appointment.dbId}`, {
+          method: 'DELETE',
+        });
+
+        if (!response.ok) {
+          console.warn('Failed to delete appointment on server');
+        }
+      } catch (err) {
+        console.warn('API delete failed:', err);
+      }
+    }
   }
 
   /* ══════════════════════════════════════════════
@@ -169,6 +281,26 @@
       ? new Date(appt.submitted).toLocaleString('es-CR', { dateStyle: 'short', timeStyle: 'short' })
       : '';
 
+    // Format tracking info if available
+    const tracking = appt.tracking || {};
+    const hasTracking = tracking.ip && tracking.ip !== 'unknown';
+    const trackingHTML = hasTracking ? `
+      <div class="adm-appt-tracking">
+        <div class="adm-appt-tracking-row">
+          <span class="adm-appt-tracking-icon">🌐</span>
+          <span>${esc(tracking.ip)}${tracking.ipCity && tracking.ipCity !== 'unknown' ? ` · ${esc(tracking.ipCity)}, ${esc(tracking.ipCountry)}` : ''}</span>
+        </div>
+        <div class="adm-appt-tracking-row">
+          <span class="adm-appt-tracking-icon">📱</span>
+          <span>${esc(tracking.deviceType || 'unknown')}${tracking.deviceBrand && tracking.deviceBrand !== 'Unknown' ? ` · ${esc(tracking.deviceBrand)}` : ''}</span>
+        </div>
+        <div class="adm-appt-tracking-row">
+          <span class="adm-appt-tracking-icon">💻</span>
+          <span>${esc(tracking.os || 'unknown')} · ${esc(tracking.browser || 'unknown')}</span>
+        </div>
+      </div>
+    ` : '';
+
     card.innerHTML = `
       <div class="adm-review-card__body" style="flex:1">
         <div class="adm-appt-front">
@@ -196,6 +328,7 @@
             ${appt.service ? `<div class="adm-appt-detail"><span class="adm-appt-detail-icon">🩺</span><span>${esc(appt.service)}</span></div>` : ''}
           </div>
           ${appt.message ? `<p class=\"adm-appt-message\">\"${esc(appt.message)}\"</p>` : ''}
+          ${trackingHTML}
         </div>
         <div class="adm-appt-back" aria-hidden="true">
           <div class="adm-appt-back-title">Detalle rápido</div>
@@ -400,23 +533,26 @@
     const appt   = appointments.find(a => a.id === id);
 
     if (action === 'confirm') {
-      updateAppointmentStatus(id, 'confirmed');
-      renderAppointments();
-      showToast('✔ Cita confirmada.', 'green');
+      updateAppointmentStatus(id, 'confirmed').then(() => {
+        renderAppointments();
+        showToast('✔ Cita confirmada.', 'green');
+      });
     }
 
     if (action === 'cancel-appt') {
-      updateAppointmentStatus(id, 'cancelled');
-      renderAppointments();
-      showToast('Cita marcada como cancelada.', 'red');
+      updateAppointmentStatus(id, 'cancelled').then(() => {
+        renderAppointments();
+        showToast('Cita marcada como cancelada.', 'red');
+      });
     }
 
     if (action === 'delete-appt') {
       animateRemove(btn.closest('.adm-appt-card'), () => {
-        deleteAppointment(id);
-        renderAppointments();
-        updateBadges();
-        showToast('Solicitud eliminada.');
+        deleteAppointment(id).then(() => {
+          renderAppointments();
+          updateBadges();
+          showToast('Solicitud eliminada.');
+        });
       });
     }
 

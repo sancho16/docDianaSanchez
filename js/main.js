@@ -312,10 +312,21 @@
     }
   })();
 
-  // ── CONTACT FORM — Formspree AJAX + localStorage backup ──
+  // ── CONTACT FORM — Formspree AJAX + localStorage backup + Device Tracking ──
   const form        = document.getElementById('contact-form');
   const formSuccess = document.getElementById('form-success');
   const submitBtn   = document.getElementById('form-submit-btn');
+
+  // Capture device info early for form submission
+  let deviceInfoCache = null;
+  if (form && window.DeviceInfo) {
+    window.DeviceInfo.getCompleteInfo().then(info => {
+      deviceInfoCache = info;
+      console.log('Device info captured:', info);
+    }).catch(err => {
+      console.warn('Failed to capture device info:', err);
+    });
+  }
 
   // Set min date on date picker to today
   const dateInput = document.getElementById('preferred-date');
@@ -353,11 +364,12 @@
     });
   });
 
-  function saveAppointmentLocally(data) {
+  function saveAppointmentLocally(data, deviceInfo = null) {
     const APPT_KEY = 'dds_appointments';
     let list = [];
     try { list = JSON.parse(localStorage.getItem(APPT_KEY) || '[]'); } catch {}
-    list.unshift({
+    
+    const appointment = {
       id:        'a' + Date.now().toString(36),
       name:      data.name,
       patient_id: data.patient_id || '',
@@ -372,7 +384,28 @@
       message:   data.message,
       status:    'pending',
       submitted: new Date().toISOString()
-    });
+    };
+
+    // Add device tracking info if available
+    if (deviceInfo) {
+      appointment.tracking = {
+        ip: deviceInfo.ip?.ip || 'unknown',
+        ipCountry: deviceInfo.ip?.country || 'unknown',
+        ipCity: deviceInfo.ip?.city || 'unknown',
+        deviceType: deviceInfo.device?.device?.type || 'unknown',
+        deviceBrand: deviceInfo.device?.device?.brand || 'unknown',
+        deviceModel: deviceInfo.device?.device?.model || 'unknown',
+        os: `${deviceInfo.device?.os?.name || 'unknown'} ${deviceInfo.device?.os?.version || ''}`.trim(),
+        browser: `${deviceInfo.device?.browser?.name || 'unknown'} ${deviceInfo.device?.browser?.version || ''}`.trim(),
+        screenSize: `${deviceInfo.device?.screen?.width}x${deviceInfo.device?.screen?.height}`,
+        language: deviceInfo.device?.language || 'unknown',
+        timezone: deviceInfo.device?.timezone || 'unknown',
+        connection: deviceInfo.device?.connection?.effectiveType || 'unknown',
+        capturedAt: deviceInfo.capturedAt
+      };
+    }
+
+    list.unshift(appointment);
     localStorage.setItem(APPT_KEY, JSON.stringify(list));
   }
 
@@ -393,11 +426,25 @@
     submitBtn.textContent = 'Enviando…';
     submitBtn.disabled = true;
 
+    // Capture device info if not already cached
+    if (!deviceInfoCache && window.DeviceInfo) {
+      try {
+        deviceInfoCache = await window.DeviceInfo.getCompleteInfo();
+      } catch (err) {
+        console.warn('Failed to capture device info on submit:', err);
+      }
+    }
+
+    // Inject device info into form
+    if (deviceInfoCache && window.DeviceInfo) {
+      window.DeviceInfo.injectIntoForm(form, deviceInfoCache);
+    }
+
     const formData = new FormData(form);
     const payload = Object.fromEntries(formData.entries());
 
     // Always save locally so admin can see it regardless of backend
-    saveAppointmentLocally(payload);
+    saveAppointmentLocally(payload, deviceInfoCache);
 
     // Post to the booking backend (Cloudflare Tunnel -> Flask)
     const action = form.getAttribute('action') || '';

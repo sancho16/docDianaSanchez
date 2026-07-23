@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Test Data - Admin Panel</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0a0a0a;
+            color: white;
+            padding: 2rem;
+            margin: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .card {
+            background: #141414;
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 1rem 0;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .btn {
+            background: #2ecc71;
+            color: white;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 0.5rem;
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            background: #27ae60;
+            transform: translateY(-2px);
+        }
+        .btn-red {
+            background: #e74c3c;
+        }
+        .btn-red:hover {
+            background: #c0392b;
+        }
+        h1, h2 {
+            color: #5fe3d6;
+        }
+        .result {
+            background: #1a1a1a;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛠️ Create Test Data for Admin Panel</h1>
+        
+        <div class="card">
+            <h2>Sample Appointments</h2>
+            <p>Create sample appointment data for testing the medical records system and dashboard charts.</p>
+            <button class="btn" onclick="createSampleAppointments()">Create Sample Appointments</button>
+            <button class="btn btn-red" onclick="clearAllAppointments()">Clear All Appointments</button>
+            <div id="appointments-result" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="card">
+            <h2>Dashboard Test</h2>
+            <p>Test the dashboard functionality with the created data.</p>
+            <button class="btn" onclick="openAdminPanel()">Open Admin Panel</button>
+            <button class="btn" onclick="testMedicalRecords()">Test Medical Records</button>
+        </div>
+
+        <div class="card">
+            <h2>Current Data</h2>
+            <button class="btn" onclick="showCurrentData()">Show Current Appointments</button>
+            <div id="current-data" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        function createSampleAppointments() {
+            const sampleAppointments = [
+                {
+                    id: 'apt-001-' + Date.now(),
+                    name: 'Ana Rodríguez',
+                    email: 'ana.rodriguez@email.com',
+                    phone: '+506 2222-3333',
+                    date: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                    time: '09:00',
+                    service: 'General Consultation',
+                    message: 'Regular checkup appointment',
+                    status: 'pending',
+                    submitted: new Date().toISOString()
+                },
+                {
+                    id: 'apt-002-' + Date.now(),
+                    name: 'Carlos Méndez',
+                    email: 'carlos.mendez@email.com',
+                    phone: '+506 8888-9999',
+                    date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                    time: '10:30',
+                    service: 'Surgery Consultation',
+                    message: 'Follow-up for previous surgery consultation',
+                    status: 'confirmed',
+                    submitted: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
+                },
+                {
+                    id: 'apt-003-' + Date.now(),
+                    name: 'María González',
+                    email: 'maria.gonzalez@email.com',
+                    phone: '+506 7777-1111',
+                    date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                    time: '14:00',
+                    service: 'Preventive Medicine',
+                    message: 'Annual health screening',
+                    status: 'confirmed',
+                    submitted: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+                },
+                {
+                    id: 'apt-004-' + Date.now(),
+                    name: 'José Herrera',
+                    email: 'jose.herrera@email.com',
+                    phone: '+506 6666-4444',
+                    date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                    time: '11:15',
+                    service: 'General Consultation',
+                    message: 'Symptoms: headaches and fatigue',
+                    status: 'cancelled',
+                    submitted: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+                },
+                {
+                    id: 'apt-005-' + Date.now(),
+                    name: 'Laura Vásquez',
+                    email: 'laura.vasquez@email.com',
+                    phone: '+506 5555-2222',
+                    date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                    time: '15:30',
+                    service: 'Surgery Consultation',
+                    message: 'Pre-operative consultation',
+                    status: 'pending',
+                    submitted: new Date().toISOString()
+                }
+            ];
+
+            try {
+                // Get existing appointments
+                const existing = JSON.parse(localStorage.getItem('dds_appointments') || '[]');
+                
+                // Add new appointments
+                const updated = [...existing, ...sampleAppointments];
+                
+                // Save to localStorage
+                localStorage.setItem('dds_appointments', JSON.stringify(updated));
+                
+                const result = document.getElementById('appointments-result');
+                result.style.display = 'block';
+                result.textContent = `✅ Created ${sampleAppointments.length} sample appointments!\n\nTotal appointments: ${updated.length}\n\nSample appointment IDs:\n${sampleAppointments.map(a => `- ${a.id} (${a.name})`).join('\n')}`;
+                
+            } catch (error) {
+                const result = document.getElementById('appointments-result');
+                result.style.display = 'block';
+                result.textContent = `❌ Error creating appointments: ${error.message}`;
+            }
+        }
+
+        function clearAllAppointments() {
+            if (confirm('Are you sure you want to delete ALL appointments? This cannot be undone.')) {
+                localStorage.removeItem('dds_appointments');
+                const result = document.getElementById('appointments-result');
+                result.style.display = 'block';
+                result.textContent = '🗑️ All appointments cleared!';
+            }
+        }
+
+        function showCurrentData() {
+            try {
+                const appointments = JSON.parse(localStorage.getItem('dds_appointments') || '[]');
+                const result = document.getElementById('current-data');
+                result.style.display = 'block';
+                
+                if (appointments.length === 0) {
+                    result.textContent = 'No appointments found in localStorage.';
+                } else {
+                    result.textContent = `Found ${appointments.length} appointments:\n\n${JSON.stringify(appointments, null, 2)}`;
+                }
+            } catch (error) {
+                const result = document.getElementById('current-data');
+                result.style.display = 'block';
+                result.textContent = `Error reading appointments: ${error.message}`;
+            }
+        }
+
+        function openAdminPanel() {
+            window.open('./index.html', '_blank');
+        }
+
+        function testMedicalRecords() {
+            // Get first appointment for testing
+            try {
+                const appointments = JSON.parse(localStorage.getItem('dds_appointments') || '[]');
+                if (appointments.length > 0) {
+                    const testUrl = `./medical-records.html?booking_id=${appointments[0].id}`;
+                    window.open(testUrl, '_blank');
+                } else {
+                    alert('No appointments found. Create sample appointments first.');
+                }
+            } catch (error) {
+                alert('Error accessing appointments: ' + error.message);
+            }
+        }
+
+        // Auto-load current data on page load
+        window.addEventListener('load', showCurrentData);
+    </script>
+</body>
+</html>

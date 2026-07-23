@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Device Tracking Test - Dr. Diana Sánchez</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+      padding: 20px;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+      max-width: 800px;
+      width: 100%;
+      padding: 40px;
+    }
+
+    h1 {
+      color: #0d9488;
+      margin-bottom: 10px;
+      font-size: 2rem;
+    }
+
+    .subtitle {
+      color: #64748b;
+      margin-bottom: 30px;
+    }
+
+    .test-btn {
+      background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+      color: white;
+      border: none;
+      padding: 16px 32px;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
+      margin-bottom: 30px;
+    }
+
+    .test-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(13, 148, 136, 0.4);
+    }
+
+    .test-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .loading {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .results {
+      display: none;
+      margin-top: 20px;
+    }
+
+    .results.show {
+      display: block;
+    }
+
+    .section {
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #0d9488;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .info-row {
+      display: flex;
+      padding: 10px 0;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .info-row:last-child {
+      border-bottom: none;
+    }
+
+    .info-label {
+      font-weight: 600;
+      color: #475569;
+      min-width: 160px;
+      flex-shrink: 0;
+    }
+
+    .info-value {
+      color: #1e293b;
+      word-break: break-word;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 100px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-left: auto;
+    }
+
+    .status-success {
+      background: #dcfce7;
+      color: #16a34a;
+    }
+
+    .status-warning {
+      background: #fef3c7;
+      color: #d97706;
+    }
+
+    .status-error {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+
+    .copy-btn {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      color: #475569;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 15px;
+    }
+
+    .copy-btn:hover {
+      background: #e2e8f0;
+      border-color: #94a3b8;
+    }
+
+    .json-output {
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: 20px;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      overflow-x: auto;
+      max-height: 400px;
+      overflow-y: auto;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 640px) {
+      .container {
+        padding: 24px;
+      }
+
+      h1 {
+        font-size: 1.5rem;
+      }
+
+      .info-row {
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .info-label {
+        min-width: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔍 Device Tracking Test</h1>
+    <p class="subtitle">Test the device and IP information capture system</p>
+
+    <button class="test-btn" id="testBtn">
+      🚀 Run Test
+    </button>
+
+    <div class="results" id="results">
+      <!-- IP Information -->
+      <div class="section">
+        <div class="section-title">
+          🌐 IP & Location Information
+          <span class="status-badge status-success" id="ipStatus">✓ Captured</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">IP Address</span>
+          <span class="info-value" id="ip">--</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Country</span>
+          <span class="info-value" id="country">--</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">City</span>
+          <span class="info-value" id="city">--</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Timezone</span>
+          <span class="info-value" id="timezone">--</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">ISP</span>
+          <span class="info-value" id="isp">--</span>
+        </div>
+      </div>
+
+      <!-- Device Information -->
+      <div class="section">
+        <div class="section-title">
+          📱 Device Information
+          <span class="status-badge status-success" id="deviceStatus">✓ Detected</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Device Type</span>
+          <span class="info-value" id="deviceType">--</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Device Brand</span>
+          <span class="info-value" id="deviceBrand">--</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Device Model</span>
+          <span class="info-value" id="deviceModel">--</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Operating System</span>
+          <span class="info-value" id="os">--</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Browser</span>
+          <span class="info-value" id="browser">--</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Screen Size</span>
+          <span class="info-value" id="screen">--</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Language</span>
+          <span class="info-value" id="language">--</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Connection Type</span>
+          <span class="info-value" id="connection">--</span>
+        </div>
+      </div>
+
+      <!-- Raw JSON -->
+      <div class="section">
+        <div class="section-title">
+          📄 Complete JSON Data
+        </div>
+        <button class="copy-btn" id="copyBtn">📋 Copy to Clipboard</button>
+        <pre class="json-output" id="jsonOutput"></pre>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/device-info.js"></script>
+  <script>
+    const testBtn = document.getElementById('testBtn');
+    const results = document.getElementById('results');
+    const copyBtn = document.getElementById('copyBtn');
+
+    testBtn.addEventListener('click', async function() {
+      // Disable button and show loading
+      testBtn.disabled = true;
+      testBtn.innerHTML = '<span class="loading"></span> Capturing device info...';
+
+      try {
+        // Capture complete device info
+        const info = await window.DeviceInfo.getCompleteInfo();
+
+        // Display results
+        displayResults(info);
+        
+        // Show results section
+        results.classList.add('show');
+
+        // Update button
+        testBtn.innerHTML = '✓ Test Complete!';
+        setTimeout(() => {
+          testBtn.disabled = false;
+          testBtn.innerHTML = '🔄 Run Test Again';
+        }, 2000);
+
+      } catch (error) {
+        console.error('Error capturing device info:', error);
+        alert('Error capturing device information. Check console for details.');
+        testBtn.disabled = false;
+        testBtn.innerHTML = '🚀 Run Test';
+      }
+    });
+
+    function displayResults(info) {
+      // IP Information
+      document.getElementById('ip').textContent = info.ip?.ip || 'Not captured';
+      document.getElementById('country').textContent = 
+        info.ip?.country ? `${info.ip.country} (${info.ip.countryCode})` : 'Not captured';
+      document.getElementById('city').textContent = 
+        info.ip?.city || 'Not captured';
+      document.getElementById('timezone').textContent = 
+        info.ip?.timezone || info.device?.timezone || 'Not captured';
+      document.getElementById('isp').textContent = 
+        info.ip?.isp || 'Not captured';
+
+      // Update IP status
+      const ipStatus = document.getElementById('ipStatus');
+      if (info.ip?.success) {
+        ipStatus.textContent = '✓ Captured';
+        ipStatus.className = 'status-badge status-success';
+      } else {
+        ipStatus.textContent = '⚠ Partial';
+        ipStatus.className = 'status-badge status-warning';
+      }
+
+      // Device Information
+      document.getElementById('deviceType').textContent = 
+        info.device?.device?.type || 'Unknown';
+      document.getElementById('deviceBrand').textContent = 
+        info.device?.device?.brand || 'Unknown';
+      document.getElementById('deviceModel').textContent = 
+        info.device?.device?.model || 'Unknown';
+      document.getElementById('os').textContent = 
+        `${info.device?.os?.name || 'Unknown'} ${info.device?.os?.version || ''}`.trim();
+      document.getElementById('browser').textContent = 
+        `${info.device?.browser?.name || 'Unknown'} ${info.device?.browser?.version || ''}`.trim();
+      document.getElementById('screen').textContent = 
+        info.device?.screen?.width && info.device?.screen?.height
+          ? `${info.device.screen.width}×${info.device.screen.height}`
+          : 'Unknown';
+      document.getElementById('language').textContent = 
+        info.device?.language || 'Unknown';
+      document.getElementById('connection').textContent = 
+        info.device?.connection?.effectiveType || 
+        info.device?.connection?.type || 
+        'Unknown';
+
+      // JSON Output
+      const jsonOutput = document.getElementById('jsonOutput');
+      jsonOutput.textContent = JSON.stringify(info, null, 2);
+
+      // Copy button
+      copyBtn.onclick = () => {
+        navigator.clipboard.writeText(JSON.stringify(info, null, 2)).then(() => {
+          const originalText = copyBtn.textContent;
+          copyBtn.textContent = '✓ Copied!';
+          copyBtn.style.background = '#dcfce7';
+          copyBtn.style.color = '#16a34a';
+          setTimeout(() => {
+            copyBtn.textContent = originalText;
+            copyBtn.style.background = '';
+            copyBtn.style.color = '';
+          }, 2000);
+        });
+      };
+    }
+  </script>
+</body>
+</html>
