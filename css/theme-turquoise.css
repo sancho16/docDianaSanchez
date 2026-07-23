@@ -123,10 +123,23 @@
 /* Hide default calendar picker visually, but keep it tappable/clickable */
 .modern-date-input::-webkit-calendar-picker-indicator {
   opacity: 0;
-  width: 24px;
-  height: 24px;
+  width: 100%;
+  height: 100%;
   position: absolute;
-  right: 0;
+  left: 0;
+  top: 0;
+  cursor: pointer;
+  z-index: 5;
+}
+
+/* Firefox date input support */
+.modern-date-input::-moz-calendar-picker-indicator {
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  left: 0;
+  top: 0;
   cursor: pointer;
   z-index: 5;
 }
@@ -138,6 +151,16 @@
 
 .modern-date-input::-webkit-clear-button {
   display: none;
+}
+
+/* Make the date input clickable everywhere for all browsers */
+.modern-date-wrapper {
+  cursor: pointer;
+}
+
+.date-icon-modern {
+  pointer-events: none;
+  z-index: 1;
 }
 
 /* Date input focus state */

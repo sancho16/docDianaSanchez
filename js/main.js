@@ -497,6 +497,31 @@
     const selectedTimeValue = document.querySelector('.selected-time-value');
     const selectedTimeDisplay = document.querySelector('.selected-time-display');
 
+    // Enhanced browser compatibility for date picker
+    if (dateInput) {
+      // Ensure clicking wrapper also opens date picker
+      const wrapper = dateInput.closest('.modern-date-wrapper');
+      if (wrapper) {
+        wrapper.addEventListener('click', function(e) {
+          // Only trigger if not already focused
+          if (document.activeElement !== dateInput) {
+            dateInput.focus();
+            // Try to show picker on all browsers
+            if (dateInput.showPicker) {
+              try {
+                dateInput.showPicker();
+              } catch (err) {
+                // Fallback: just focus which should open picker in most browsers
+                dateInput.click();
+              }
+            } else {
+              dateInput.click();
+            }
+          }
+        });
+      }
+    }
+
     // Enhanced haptic feedback function with different intensities
     function triggerHapticFeedback(element, intensity = 'light', duration = 150) {
       // Add haptic animation class
