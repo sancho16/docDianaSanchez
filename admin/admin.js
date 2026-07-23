@@ -33,6 +33,76 @@
   const sidebar     = document.getElementById('adm-sidebar');
   const downloadBtn = document.getElementById('download-btn');
   const toast       = document.getElementById('adm-toast');
+  const searchInput = document.getElementById('adm-search');
+  const themeToggle = document.getElementById('theme-toggle');
+
+  /* ══════════════════════════════════════════════
+     THEME TOGGLE
+  ══════════════════════════════════════════════ */
+  const THEME_KEY = 'dds_admin_theme';
+  
+  function loadTheme() {
+    const savedTheme = localStorage.getItem(THEME_KEY);
+    if (savedTheme === 'light') {
+      document.body.classList.add('light-theme');
+      updateThemeToggleText('dark');
+    } else {
+      document.body.classList.remove('light-theme');
+      updateThemeToggleText('light');
+    }
+  }
+
+  function updateThemeToggleText(nextTheme) {
+    if (nextTheme === 'light') {
+      themeToggle.innerHTML = `
+        <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" width="16" height="16">
+          <path d="M10 2.5a.5.5 0 01.5.5v1a.5.5 0 01-1 0V3a.5.5 0 01.5-.5zM16 10a.5.5 0 01.5-.5h1a.5.5 0 010 1h-1a.5.5 0 01-.5-.5zM10 16a.5.5 0 01.5.5v1a.5.5 0 01-1 0v-1a.5.5 0 01.5-.5zM3 10a.5.5 0 01-.5-.5 .5.5 0 01-.5 0h1a.5.5 0 010 1H2.5a.5.5 0 01-.5-.5z" stroke="currentColor" stroke-width="1.5"/>
+          <circle cx="10" cy="10" r="4" stroke="currentColor" stroke-width="1.5"/>
+        </svg>
+        Tema claro
+      `;
+    } else {
+      themeToggle.innerHTML = `
+        <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" width="16" height="16">
+          <path d="M17 11a8 8 0 01-15 0 8 8 0 0113-6 6 6 0 002 6z" stroke="currentColor" stroke-width="1.5"/>
+        </svg>
+        Tema oscuro
+      `;
+    }
+  }
+
+  themeToggle.addEventListener('click', function() {
+    const isLight = document.body.classList.toggle('light-theme');
+    localStorage.setItem(THEME_KEY, isLight ? 'light' : 'dark');
+    updateThemeToggleText(isLight ? 'dark' : 'light');
+    showToast(`Tema ${isLight ? 'claro' : 'oscuro'} activado`);
+  });
+
+  /* ══════════════════════════════════════════════
+     SEARCH FUNCTIONALITY
+  ══════════════════════════════════════════════ */
+  let searchQuery = '';
+
+  searchInput.addEventListener('input', function(e) {
+    searchQuery = e.target.value.toLowerCase().trim();
+    renderAll();
+  });
+
+  function matchesSearch(item) {
+    if (!searchQuery) return true;
+    
+    const searchableText = [
+      item.name || '',
+      item.email || '',
+      item.phone || '',
+      item.patient_id || '',
+      item.text || '',
+      item.message || '',
+      item.service || ''
+    ].join(' ').toLowerCase();
+    
+    return searchableText.includes(searchQuery);
+  }
 
   /* ══════════════════════════════════════════════
      AUTH
@@ -239,12 +309,19 @@
     if (!list) return;
     list.innerHTML = '';
 
-    const filtered = apptFilter === 'all'
+    let filtered = apptFilter === 'all'
       ? appointments
       : appointments.filter(a => (a.status || 'pending') === apptFilter);
+    
+    filtered = filtered.filter(matchesSearch);
 
     if (!filtered.length) {
       empty.hidden = false;
+      empty.innerHTML = `
+        <div class="adm-empty__icon" aria-hidden="true">📅</div>
+        <p>${searchQuery ? 'No se encontraron resultados para tu búsqueda.' : 'No hay solicitudes de cita aún.'}</p>
+        <small>${searchQuery ? 'Intenta con otros términos de búsqueda.' : 'Cuando un paciente complete el formulario en el sitio, la solicitud aparecerá aquí automáticamente.'}</small>
+      `;
       return;
     }
     empty.hidden = true;
@@ -699,10 +776,20 @@
     const empty = document.getElementById('pending-empty');
     list.innerHTML = '';
 
-    if (!pendingReviews.length) { empty.hidden = false; return; }
+    const filtered = pendingReviews.filter(matchesSearch);
+
+    if (!filtered.length) { 
+      empty.hidden = false; 
+      empty.innerHTML = `
+        <div class="adm-empty__icon" aria-hidden="true">📭</div>
+        <p>${searchQuery ? 'No se encontraron resultados para tu búsqueda.' : 'No hay reseñas pendientes por revisar.'}</p>
+        <small>${searchQuery ? 'Intenta con otros términos de búsqueda.' : 'Cuando un paciente envíe una reseña desde <strong>review.html</strong>, aparecerá aquí.'}</small>
+      `;
+      return; 
+    }
     empty.hidden = true;
 
-    pendingReviews.forEach((review, idx) => {
+    filtered.forEach((review, idx) => {
       const card = buildReviewCard(review, 'pending');
       card.style.animationDelay = (idx * 60) + 'ms';
       list.appendChild(card);
@@ -717,8 +804,17 @@
     const empty = document.getElementById('approved-empty');
     list.innerHTML = '';
 
-    const merged = mergeApproved();
-    if (!merged.length) { empty.hidden = false; return; }
+    const merged = mergeApproved().filter(matchesSearch);
+    
+    if (!merged.length) { 
+      empty.hidden = false; 
+      empty.innerHTML = `
+        <div class="adm-empty__icon" aria-hidden="true">✨</div>
+        <p>${searchQuery ? 'No se encontraron resultados para tu búsqueda.' : 'Aún no hay reseñas aprobadas en reviews.json.'}</p>
+        <small>${searchQuery ? 'Intenta con otros términos de búsqueda.' : 'Apruebe reseñas en la pestaña "Pendientes" y exporte el archivo.'}</small>
+      `;
+      return; 
+    }
     empty.hidden = true;
 
     merged.forEach((review, idx) => {
@@ -920,6 +1016,7 @@
   /* ══════════════════════════════════════════════
      INIT
   ══════════════════════════════════════════════ */
+  loadTheme();
   if (isLoggedIn()) showApp();
 
 })();
