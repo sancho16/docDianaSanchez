@@ -162,12 +162,12 @@ def get_bookings():
         # Fetch bookings with all device tracking fields
         query = """
             SELECT 
-                id, name, patient_id, phone, email, channel, virtual_platform,
-                address, address_city, address_province, gps_coordinates,
+                id, name, phone, email,
+                
                 service, preferred_date, preferred_time, message, status,
-                ip_address, ip_country, ip_city, device_type, device_brand,
-                device_model, device_os, device_browser, screen_size,
-                user_language, user_timezone, connection_type,
+                
+                
+                
                 created_at, updated_at
             FROM bookings 
             WHERE 1=1
@@ -223,12 +223,12 @@ def handle_booking(booking_id):
             
             query = """
                 SELECT 
-                    id, name, patient_id, phone, email, channel, virtual_platform,
-                    address, address_city, address_province, gps_coordinates,
+                    id, name, phone, email,
+                    
                     service, preferred_date, preferred_time, message, status,
-                    ip_address, ip_country, ip_city, device_type, device_brand,
-                    device_model, device_os, device_browser, screen_size,
-                    user_language, user_timezone, connection_type,
+                    
+                    
+                    
                     created_at, updated_at
                 FROM bookings 
                 WHERE id = %s
@@ -1096,6 +1096,72 @@ ADMIN_VIEW_HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8">
  .cancelled{background:rgba(245,154,154,0.2);color:#f59a9a;border:1px solid rgba(245,154,154,0.3)}
  
  .sel{opacity:0.5}
+/* ══════════════════════════════════════════════
+   THEME SYSTEM - Dark & Light Mode
+══════════════════════════════════════════════ */
+:root {
+  /* Light Theme (Default) */
+  --bg-gradient-start: #f0f4f8;
+  --bg-gradient-end: #d9e2ec;
+  --glass-bg: rgba(255,255,255,0.9);
+  --glass-border: rgba(0,0,0,0.1);
+  --text-primary: #102a43;
+  --text-secondary: #334e68;
+  --text-muted: #627d98;
+  --accent: #00a8b5;
+  --accent-hover: #008891;
+  --shadow: rgba(0,0,0,0.1);
+}
+
+[data-theme="dark"] {
+  /* Dark Theme */
+  --bg-gradient-start: #001f25;
+  --bg-gradient-end: #003d47;
+  --glass-bg: rgba(255,255,255,0.08);
+  --glass-border: rgba(255,255,255,0.12);
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255,255,255,0.75);
+  --text-muted: rgba(255,255,255,0.5);
+  --accent: #5fe3d6;
+  --accent-hover: #00b8a3;
+  --shadow: rgba(0,0,0,0.3);
+}
+
+/* Theme Toggle Button */
+.theme-toggle {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 1000;
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 50px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px var(--shadow);
+}
+
+.theme-toggle:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px var(--shadow);
+}
+
+.theme-toggle svg {
+  width: 20px;
+  height: 20px;
+  fill: var(--accent);
+  transition: transform 0.3s ease;
+}
+
+.theme-toggle:hover svg {
+  transform: rotate(20deg);
+}
+
  .tag{
    font-size:0.7rem;
    color:var(--accent);
@@ -1115,6 +1181,24 @@ ADMIN_VIEW_HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8">
     </div>
     <a class="logout" href="/admin/logout" data-en="Logout" data-es="Cerrar sesión">Logout</a>
   </div>
+
+  <!-- Theme Toggle -->
+  <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark/light theme" title="Switch theme">
+    <svg id="theme-icon-sun" viewBox="0 0 24 24" style="display:none;">
+      <circle cx="12" cy="12" r="5"/>
+      <line x1="12" y1="1" x2="12" y2="3"/>
+      <line x1="12" y1="21" x2="12" y2="23"/>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+      <line x1="1" y1="12" x2="3" y2="12"/>
+      <line x1="21" y1="12" x2="23" y2="12"/>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+    </svg>
+    <svg id="theme-icon-moon" viewBox="0 0 24 24">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+    </svg>
+  </button>
 </header>
 
 <div class="container">
@@ -1236,6 +1320,64 @@ function setLang(lang) {
   // Redraw charts with new language
   if (statsData) charts(statsData);
   load();
+
+// Theme toggle functionality
+function toggleTheme() {
+  const html = document.documentElement;
+  const currentTheme = html.getAttribute('data-theme') || 'light';
+  const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+  
+  html.setAttribute('data-theme', newTheme);
+  localStorage.setItem('adminTheme', newTheme);
+  
+  // Toggle icons
+  document.getElementById('theme-icon-sun').style.display = newTheme === 'dark' ? 'block' : 'none';
+  document.getElementById('theme-icon-moon').style.display = newTheme === 'dark' ? 'none' : 'block';
+  
+  // Update chart colors
+  if (typeof chartInstances !== 'undefined') {
+    updateChartColors(newTheme);
+  }
+}
+
+// Load saved theme on page load
+(function() {
+  const savedTheme = localStorage.getItem('adminTheme') || 'dark';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  
+  // Set correct icon on load
+  if (document.getElementById('theme-icon-sun')) {
+    document.getElementById('theme-icon-sun').style.display = savedTheme === 'dark' ? 'block' : 'none';
+    document.getElementById('theme-icon-moon').style.display = savedTheme === 'dark' ? 'none' : 'block';
+  }
+})();
+
+function updateChartColors(theme) {
+  const isDark = theme === 'dark';
+  const textColor = isDark ? 'rgba(255,255,255,0.75)' : '#334e68';
+  const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+  
+  Object.values(chartInstances).forEach(chart => {
+    if (chart && chart.options) {
+      // Update text colors
+      if (chart.options.scales) {
+        if (chart.options.scales.x) {
+          chart.options.scales.x.ticks.color = textColor;
+          chart.options.scales.x.grid.color = gridColor;
+        }
+        if (chart.options.scales.y) {
+          chart.options.scales.y.ticks.color = textColor;
+          chart.options.scales.y.grid.color = gridColor;
+        }
+      }
+      if (chart.options.plugins && chart.options.plugins.legend) {
+        chart.options.plugins.legend.labels.color = textColor;
+      }
+      chart.update();
+    }
+  });
+}
+
 }
 
 const COL = {pending:'#e8f59a',confirmed:'#9af2c9',completed:'#9fd9f2',cancelled:'#f59a9a'};
@@ -1396,6 +1538,64 @@ fDummy.onchange = load;
 fStatus.onchange = load;
 load();
 
+// Theme toggle functionality
+function toggleTheme() {
+  const html = document.documentElement;
+  const currentTheme = html.getAttribute('data-theme') || 'light';
+  const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+  
+  html.setAttribute('data-theme', newTheme);
+  localStorage.setItem('adminTheme', newTheme);
+  
+  // Toggle icons
+  document.getElementById('theme-icon-sun').style.display = newTheme === 'dark' ? 'block' : 'none';
+  document.getElementById('theme-icon-moon').style.display = newTheme === 'dark' ? 'none' : 'block';
+  
+  // Update chart colors
+  if (typeof chartInstances !== 'undefined') {
+    updateChartColors(newTheme);
+  }
+}
+
+// Load saved theme on page load
+(function() {
+  const savedTheme = localStorage.getItem('adminTheme') || 'dark';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  
+  // Set correct icon on load
+  if (document.getElementById('theme-icon-sun')) {
+    document.getElementById('theme-icon-sun').style.display = savedTheme === 'dark' ? 'block' : 'none';
+    document.getElementById('theme-icon-moon').style.display = savedTheme === 'dark' ? 'none' : 'block';
+  }
+})();
+
+function updateChartColors(theme) {
+  const isDark = theme === 'dark';
+  const textColor = isDark ? 'rgba(255,255,255,0.75)' : '#334e68';
+  const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+  
+  Object.values(chartInstances).forEach(chart => {
+    if (chart && chart.options) {
+      // Update text colors
+      if (chart.options.scales) {
+        if (chart.options.scales.x) {
+          chart.options.scales.x.ticks.color = textColor;
+          chart.options.scales.x.grid.color = gridColor;
+        }
+        if (chart.options.scales.y) {
+          chart.options.scales.y.ticks.color = textColor;
+          chart.options.scales.y.grid.color = gridColor;
+        }
+      }
+      if (chart.options.plugins && chart.options.plugins.legend) {
+        chart.options.plugins.legend.labels.color = textColor;
+      }
+      chart.update();
+    }
+  });
+}
+
+
 // Read/Unread filter handling
 let currentReadFilter = '';
 document.getElementById('fAll').addEventListener('click', function() {
@@ -1414,6 +1614,64 @@ document.getElementById('fRead').addEventListener('click', function() {
 function setReadFilter(filter) {
   currentReadFilter = filter;
   load();
+
+// Theme toggle functionality
+function toggleTheme() {
+  const html = document.documentElement;
+  const currentTheme = html.getAttribute('data-theme') || 'light';
+  const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+  
+  html.setAttribute('data-theme', newTheme);
+  localStorage.setItem('adminTheme', newTheme);
+  
+  // Toggle icons
+  document.getElementById('theme-icon-sun').style.display = newTheme === 'dark' ? 'block' : 'none';
+  document.getElementById('theme-icon-moon').style.display = newTheme === 'dark' ? 'none' : 'block';
+  
+  // Update chart colors
+  if (typeof chartInstances !== 'undefined') {
+    updateChartColors(newTheme);
+  }
+}
+
+// Load saved theme on page load
+(function() {
+  const savedTheme = localStorage.getItem('adminTheme') || 'dark';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  
+  // Set correct icon on load
+  if (document.getElementById('theme-icon-sun')) {
+    document.getElementById('theme-icon-sun').style.display = savedTheme === 'dark' ? 'block' : 'none';
+    document.getElementById('theme-icon-moon').style.display = savedTheme === 'dark' ? 'none' : 'block';
+  }
+})();
+
+function updateChartColors(theme) {
+  const isDark = theme === 'dark';
+  const textColor = isDark ? 'rgba(255,255,255,0.75)' : '#334e68';
+  const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+  
+  Object.values(chartInstances).forEach(chart => {
+    if (chart && chart.options) {
+      // Update text colors
+      if (chart.options.scales) {
+        if (chart.options.scales.x) {
+          chart.options.scales.x.ticks.color = textColor;
+          chart.options.scales.x.grid.color = gridColor;
+        }
+        if (chart.options.scales.y) {
+          chart.options.scales.y.ticks.color = textColor;
+          chart.options.scales.y.grid.color = gridColor;
+        }
+      }
+      if (chart.options.plugins && chart.options.plugins.legend) {
+        chart.options.plugins.legend.labels.color = textColor;
+      }
+      chart.update();
+    }
+  });
+}
+
 }
 
 function setActiveReadButton(activeBtn) {
@@ -2013,12 +2271,12 @@ def admin_medical_records():
         
         query = """
             SELECT 
-                id, name, patient_id, phone, email, channel, virtual_platform,
-                address, address_city, address_province, gps_coordinates,
+                id, name, phone, email,
+                
                 service, preferred_date, preferred_time, message, status,
-                ip_address, ip_country, ip_city, device_type, device_brand,
-                device_model, device_os, device_browser, screen_size,
-                user_language, user_timezone, connection_type,
+                
+                
+                
                 created_at, updated_at
             FROM bookings 
             WHERE id = %s
