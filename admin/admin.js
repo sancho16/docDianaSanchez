@@ -277,6 +277,10 @@
     openDetailModal(appt);
   }
 
+  function showDetailModal(appt) {
+    openDetailModal(appt);
+  }
+
   function openDetailModal(appt) {
     closeDetailModal();
     const overlay = document.createElement('div');
