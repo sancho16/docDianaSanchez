@@ -30,6 +30,7 @@ DATABASE_URL = os.environ.get(
 )
 
 ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN", "")  # set via .env
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "diana2024")  # user-friendly password
 
 # Very small in-memory rate limiter: IP -> list of timestamps (last 20 min)
 _RATE = {}
