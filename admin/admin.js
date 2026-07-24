@@ -161,13 +161,48 @@
   ══════════════════════════════════════════════ */
   async function loadAll() {
     try {
-      pendingReviews  = ReviewsDB.getPending();
-      approvedReviews = await ReviewsDB.fetchApproved(true);
-      appointments    = await loadAppointments();
-      renderAll();
+      console.log('[loadAll] Starting...');
+      
+      // Load pending reviews (local)
+      try {
+        pendingReviews  = ReviewsDB.getPending();
+        console.log('[loadAll] pendingReviews:', pendingReviews?.length || 0);
+      } catch (e) {
+        console.error('[loadAll] Error getting pending reviews:', e);
+        pendingReviews = [];
+      }
+      
+      // Load approved reviews (from JSON)
+      try {
+        approvedReviews = await ReviewsDB.fetchApproved(true);
+        console.log('[loadAll] approvedReviews:', approvedReviews?.length || 0);
+      } catch (e) {
+        console.error('[loadAll] Error fetching approved reviews:', e);
+        approvedReviews = [];
+      }
+      
+      // Load appointments (from API)
+      try {
+        appointments    = await loadAppointments();
+        console.log('[loadAll] appointments:', appointments?.length || 0);
+      } catch (e) {
+        console.error('[loadAll] Error loading appointments:', e);
+        appointments = [];
+      }
+      
+      // Render all data
+      try {
+        renderAll();
+        console.log('[loadAll] renderAll complete');
+      } catch (e) {
+        console.error('[loadAll] Error rendering:', e);
+        showToast('Error renderizando datos: ' + e.message, 'red');
+        throw e;
+      }
+      
       showToast('Datos cargados exitosamente', 'green');
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error('[loadAll] FATAL ERROR:', error.message, error);
       showToast('Error cargando datos: ' + error.message, 'red');
     }
   }
