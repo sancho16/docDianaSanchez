@@ -11,6 +11,7 @@
   const SESSION_KEY = 'dds_admin_session';
   const APPT_KEY    = 'dds_appointments';
   const API_URL     = 'https://api.docdianasanchez.com';
+  const API_HOST_KEY = 'dds_api_host';
 
   /* ── State ── */
   let approvedReviews = [];
@@ -159,6 +160,35 @@
     renderAll();
   }
 
+  /* API host override UI */
+  const apiHostDisplay = document.getElementById('api-host-display');
+  const apiEditBtn = document.getElementById('api-edit');
+
+  function getApiBase() {
+    return localStorage.getItem(API_HOST_KEY) || API_URL;
+  }
+
+  function setApiBase(url) {
+    localStorage.setItem(API_HOST_KEY, url);
+    if (apiHostDisplay) apiHostDisplay.textContent = 'API: ' + url.replace(/^https?:\/\//, '');
+  }
+
+  // Init display
+  if (apiHostDisplay) apiHostDisplay.textContent = 'API: ' + getApiBase().replace(/^https?:\/\//, '');
+
+  if (apiEditBtn) {
+    apiEditBtn.addEventListener('click', function () {
+      const current = getApiBase();
+      const val = prompt('API base URL', current);
+      if (val && val.trim()) {
+        let normalized = val.trim();
+        if (!/^https?:\/\//.test(normalized)) normalized = 'http://' + normalized;
+        setApiBase(normalized);
+        showToast('API apuntando a ' + normalized, 'green');
+      }
+    });
+  }
+
   function renderAll() {
     renderPending();
     renderApproved();
@@ -172,7 +202,7 @@
   ══════════════════════════════════════════════ */
   async function loadAppointmentsFromAPI() {
     try {
-      const response = await fetch(`${API_URL}/api/bookings`, {
+      const response = await fetch(`${getApiBase()}/api/bookings`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
@@ -260,7 +290,7 @@
     // Update in API if available
     if (appointment.dbId) {
       try {
-        const response = await fetch(`${API_URL}/api/bookings/${appointment.dbId}`, {
+        const response = await fetch(`${getApiBase()}/api/bookings/${appointment.dbId}`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
@@ -287,7 +317,7 @@
     // Delete from API if available
     if (appointment && appointment.dbId) {
       try {
-        const response = await fetch(`${API_URL}/api/bookings/${appointment.dbId}`, {
+        const response = await fetch(`${getApiBase()}/api/bookings/${appointment.dbId}`, {
           method: 'DELETE',
         });
 

@@ -159,11 +159,16 @@ def get_bookings():
         conn = _db()
         cur = conn.cursor()
         
-        # Fetch bookings using the live table columns
+        # Fetch bookings with all device tracking fields
         query = """
             SELECT 
-                id, name, phone, email, preferred_date, preferred_time,
-                service, message, status, is_dummy, created_at, updated_at
+                id, name, phone, email,
+                
+                service, preferred_date, preferred_time, message, status,
+                
+                
+                
+                created_at, updated_at
             FROM bookings 
             WHERE 1=1
         """

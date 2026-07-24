@@ -49,10 +49,22 @@ class MedicalRecordsManager {
             if (response.ok) {
                 this.visitId = result.visit_id;
             } else {
+                // If DB permissions prevent visits creation, fall back to a local draft
+                if (result && typeof result.error === 'string' && result.error.toLowerCase().includes('permission denied')) {
+                    console.warn('Visit creation failed due to DB permissions, creating draft instead');
+                    const draft = await fetch('/api/admin/visits/draft', {
+                        method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ booking_id: bookingId })
+                    }).then(r=>r.json());
+                    if (draft && draft.visit_id) {
+                        this.visitId = draft.visit_id;
+                        return;
+                    }
+                }
                 throw new Error(result.error || 'Failed to create visit');
             }
         } catch (error) {
             console.error('Error creating visit:', error);
+            // Rethrow so init() shows the user an error if even draft creation fails
             throw error;
         }
     }
@@ -273,11 +285,17 @@ class MedicalRecordsManager {
             const saveBtn = document.querySelector('.btn-secondary[onclick="saveProgress()"]');
             if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving…'; }
 
-            const response = await fetch(`/api/admin/visits/${this.visitId}`, {
-                method: 'PUT',
-                headers,
-                body: JSON.stringify(visitData)
-            });
+            // If this is a draft visit id, use the draft update endpoint
+            let response;
+            if (String(this.visitId).startsWith('draft-')) {
+                response = await fetch(`/api/admin/visits/draft/${this.visitId}`, {
+                    method: 'PUT', headers, body: JSON.stringify(visitData)
+                });
+            } else {
+                response = await fetch(`/api/admin/visits/${this.visitId}`, {
+                    method: 'PUT', headers, body: JSON.stringify(visitData)
+                });
+            }
 
             const result = await response.json();
 

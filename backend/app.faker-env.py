@@ -11,6 +11,8 @@ from flask import Flask, send_from_directory, request, jsonify, Response, render
 from flask_cors import CORS
 import notify
 
+
+
 app = Flask(__name__)
 
 # Only the real site may call this API. Adjust if you add a staging domain.
@@ -147,166 +149,6 @@ def create_booking():
         return jsonify({"ok": False, "error": "database error"}), 500
 
 
-
-
-@app.route("/api/bookings", methods=["GET"])
-def get_bookings():
-    """Public endpoint to fetch bookings - for frontend admin panel"""
-    try:
-        status_filter = request.args.get('status', '').strip()
-        limit = int(request.args.get('limit', '100'))
-        
-        conn = _db()
-        cur = conn.cursor()
-        
-        # Fetch bookings using the live table columns
-        query = """
-            SELECT 
-                id, name, phone, email, preferred_date, preferred_time,
-                service, message, status, is_dummy, created_at, updated_at
-            FROM bookings 
-            WHERE 1=1
-        """
-        params = []
-        
-        if status_filter:
-            query += " AND status = %s"
-            params.append(status_filter)
-        
-        query += " ORDER BY created_at DESC LIMIT %s"
-        params.append(limit)
-        
-        cur.execute(query, params)
-        cols = [d[0] for d in cur.description]
-        rows = cur.fetchall()
-        
-        bookings = []
-        for row in rows:
-            booking = dict(zip(cols, row))
-            # Convert dates to ISO format strings
-            for key in ['created_at', 'updated_at']:
-                if booking.get(key):
-                    booking[key] = booking[key].isoformat()
-            for key in ['preferred_date', 'preferred_time']:
-                if booking.get(key):
-                    booking[key] = str(booking[key])
-            bookings.append(booking)
-        
-        cur.close()
-        conn.close()
-        
-        return jsonify({
-            'ok': True,
-            'bookings': bookings,
-            'count': len(bookings)
-        })
-    except Exception as e:
-        return jsonify({
-            'ok': False,
-            'error': str(e)
-        }), 500
-
-
-@app.route("/api/bookings/<int:booking_id>", methods=["GET", "PATCH", "DELETE"])
-def handle_booking(booking_id):
-    """Handle individual booking operations"""
-    
-    if request.method == "GET":
-        try:
-            conn = _db()
-            cur = conn.cursor()
-            
-            query = """
-                SELECT 
-                    id, name, phone, email,
-                    
-                    service, preferred_date, preferred_time, message, status,
-                    
-                    
-                    
-                    created_at, updated_at
-                FROM bookings 
-                WHERE id = %s
-            """
-            
-            cur.execute(query, (booking_id,))
-            cols = [d[0] for d in cur.description]
-            row = cur.fetchone()
-            
-            if not row:
-                cur.close()
-                conn.close()
-                return jsonify({'ok': False, 'error': 'Booking not found'}), 404
-            
-            booking = dict(zip(cols, row))
-            
-            # Convert dates
-            for key in ['created_at', 'updated_at']:
-                if booking.get(key):
-                    booking[key] = booking[key].isoformat()
-            for key in ['preferred_date', 'preferred_time']:
-                if booking.get(key):
-                    booking[key] = str(booking[key])
-            
-            cur.close()
-            conn.close()
-            
-            return jsonify({'ok': True, 'booking': booking})
-        except Exception as e:
-            return jsonify({'ok': False, 'error': str(e)}), 500
-    
-    elif request.method == "PATCH":
-        try:
-            data = request.get_json(silent=True) or {}
-            status = data.get('status', '').strip()
-            
-            if not status:
-                return jsonify({'ok': False, 'error': 'Status is required'}), 400
-            
-            if status not in ['pending', 'confirmed', 'cancelled', 'completed']:
-                return jsonify({'ok': False, 'error': 'Invalid status'}), 400
-            
-            conn = _db()
-            cur = conn.cursor()
-            
-            query = "UPDATE bookings SET status = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s"
-            cur.execute(query, (status, booking_id))
-            conn.commit()
-            
-            if cur.rowcount == 0:
-                cur.close()
-                conn.close()
-                return jsonify({'ok': False, 'error': 'Booking not found'}), 404
-            
-            cur.close()
-            conn.close()
-            
-            return jsonify({'ok': True, 'message': 'Booking updated successfully'})
-        except Exception as e:
-            return jsonify({'ok': False, 'error': str(e)}), 500
-    
-    elif request.method == "DELETE":
-        try:
-            conn = _db()
-            cur = conn.cursor()
-            
-            query = "DELETE FROM bookings WHERE id = %s"
-            cur.execute(query, (booking_id,))
-            conn.commit()
-            
-            if cur.rowcount == 0:
-                cur.close()
-                conn.close()
-                return jsonify({'ok': False, 'error': 'Booking not found'}), 404
-            
-            cur.close()
-            conn.close()
-            
-            return jsonify({'ok': True, 'message': 'Booking deleted successfully'})
-        except Exception as e:
-            return jsonify({'ok': False, 'error': str(e)}), 500
-
-
 @app.route("/api/bookings.csv", methods=["GET"])
 def bookings_csv():
     token = request.args.get("token") or request.headers.get("X-Admin-Token", "")
@@ -365,6 +207,20 @@ def _admin_authed():
     return val.lower() in ALLOWED_ADMINS
 
 
+@app.route("/api/admin/health", methods=["GET"])
+def admin_health():
+    """Lightweight health check for admin page diagnostics."""
+    try:
+        conn = _db()
+        cur = conn.cursor()
+        cur.execute("SELECT 1")
+        cur.close()
+        conn.close()
+        return jsonify({"ok": True, "db": True})
+    except Exception as e:
+        return jsonify({"ok": True, "db": False, "error": str(e)}), 200
+
+
 @app.route("/api/admin/auth", methods=["POST"])
 def admin_auth():
     """Accept a Google ID token, verify it, set session cookie if email is allowed."""
@@ -385,10 +241,22 @@ def admin_auth():
 
 
 @app.route("/admin", methods=["GET"])
+
 def admin_login_page():
     if _admin_authed():
         return redirect(url_for("admin_view"))
-    return render_template_string(ADMIN_LOGIN_HTML, google_client_id=GOOGLE_CLIENT_ID)
+    token = request.args.get("token", "")
+    if token and ADMIN_TOKEN and token == ADMIN_TOKEN:
+        resp = make_response(redirect(url_for("admin_view")))
+        resp.set_cookie(ADMIN_COOKIE, token, httponly=True, secure=True, samesite="Strict", max_age=60*60*8)
+        return resp
+    tok_header = request.headers.get("X-Admin-Token", "")
+    if tok_header and ADMIN_TOKEN and tok_header == ADMIN_TOKEN:
+        resp = make_response(redirect(url_for("admin_view")))
+        resp.set_cookie(ADMIN_COOKIE, tok_header, httponly=True, secure=True, samesite="Strict", max_age=60*60*8)
+        return resp
+    debug = request.args.get("debug", "")
+    return render_template_string(ADMIN_LOGIN_HTML, google_client_id=GOOGLE_CLIENT_ID, debug=bool(debug), admin_token=ADMIN_TOKEN)
 
 
 @app.route("/admin/login", methods=["POST"])
@@ -414,6 +282,69 @@ def admin_view():
     if not _admin_authed():
         return redirect(url_for("admin_login_page"))
     return render_template_string(ADMIN_VIEW_HTML)
+
+
+
+@app.route("/admin/appointment/<int:bid>", methods=["GET"])
+def admin_appointment_detail(bid):
+    if not "_admin_authed" in globals() or not _admin_authed():
+        return redirect(url_for("admin_login_page"))
+    try:
+        conn = _db()
+        cur = conn.cursor()
+        cur.execute("SELECT id,name,phone,email,preferred_date,preferred_time,service,message,status,is_dummy,created_at FROM bookings WHERE id=%s", (bid,))
+        row = cur.fetchone()
+        cur.close(); conn.close()
+        if not row:
+            return redirect(url_for("admin_view"))
+        cols = ["id","name","phone","email","preferred_date","preferred_time","service","message","status","is_dummy","created_at"]
+        booking = dict(zip(cols, row))
+        return render_template_string(APPOINTMENT_DETAIL_HTML, b=booking)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+APPOINTMENT_DETAIL_HTML = """<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Appointment {{b.id}} – Admin</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#001f25;--panel:rgba(255,255,255,.08);--border:rgba(255,255,255,.12);--text:#fff;--muted:rgba(255,255,255,.6);--accent:#5fe3d6;--accent-2:#00b8a3}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',Segoe UI,Roboto,sans-serif;background:linear-gradient(135deg,var(--bg),#003d47);color:var(--text);min-height:100vh;padding:2rem}
+.wrap{max-width:900px;margin:0 auto;background:var(--panel);border:1px solid var(--border);border-radius:20px;padding:1.8rem;backdrop-filter:blur(16px) saturate(180%);-webkit-backdrop-filter:blur(16px) saturate(180%)}
+.top{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1.2rem}
+h1{font-size:1.3rem;color:var(--accent)}
+a.back{color:var(--accent);text-decoration:none;padding:.6rem 1rem;border-radius:10px;border:1px solid rgba(95,227,214,.3);background:rgba(95,227,214,.06)}
+a.back:hover{background:rgba(95,227,214,.12)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin:1rem 0}
+.card{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:14px;padding:1rem}
+.card label{display:block;font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.3rem}
+.card .val{font-size:1rem;color:var(--text);word-break:break-word}
+.actions{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1.2rem}
+.btn{padding:.7rem 1.2rem;border:0;border-radius:10px;font-weight:700;cursor:pointer;color:#001f25;background:linear-gradient(135deg,var(--accent),var(--accent-2))}
+.btn.danger{background:#ef4444;color:#fff}
+.btn.secondary{background:rgba(255,255,255,.08);color:var(--text);border:1px solid rgba(255,255,255,.15)}
+</style></head><body>
+<div class="wrap">
+  <div class="top"><h1>Appointment #{{b.id}}</h1><a class="back" href="/admin/view">← Back to list</a></div>
+  <div class="grid">
+    <div class="card"><label>Patient</label><div class="val">{{escapeHtml(b.name)}}</div></div>
+    <div class="card"><label>Email</label><div class="val">{{escapeHtml(b.email or 'Not provided')}}</div></div>
+    <div class="card"><label>Phone</label><div class="val">{{escapeHtml(b.phone or 'Not provided')}}</div></div>
+    <div class="card"><label>Date</label><div class="val">{{escapeHtml(b.preferred_date or 'Not specified')}}</div></div>
+    <div class="card"><label>Time</label><div class="val">{{escapeHtml(b.preferred_time or 'Not specified')}}</div></div>
+    <div class="card"><label>Service</label><div class="val">{{escapeHtml(b.service or '-')}}</div></div>
+    <div class="card"><label>Status</label><div class="val">{{escapeHtml(b.status or 'pending')}}</div></div>
+  </div>
+  <div class="card" style="margin-top:.6rem"><label>Message / Notes</label><div class="val">{{escapeHtml(b.message or '-')}}</div></div>
+  <form method="post" action="/api/admin/bookings/{{b.id}}" onsubmit="event.preventDefault(); fetch('/api/admin/bookings/{{b.id}}',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:this.status.value})}).then(()=>location.href='/admin/view')" class="actions">
+    <input type="hidden" name="status" value="confirmed">
+    <button class="btn" type="submit">Confirm</button>
+    <button class="btn danger" type="submit" onclick="this.parentNode.status.value='cancelled'">Cancel</button>
+    <a class="btn secondary" href="/admin/view">Close</a>
+  </form>
+</div>
+</body></html>"""
 
 
 @app.route("/api/admin/bookings", methods=["GET"])
@@ -793,6 +724,76 @@ ADMIN_LOGIN_HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8"
    opacity:0.8;
  }
 
+
+/* Enhanced Appointment Cards */
+.appointments-grid{
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(380px,1fr));
+  gap:1.5rem; margin-top:2rem;
+}
+.appointment-card{
+  position:relative; height:200px; perspective:1000px;
+  cursor:pointer; transition:transform 0.3s ease;
+}
+.appointment-card:hover{transform:scale(1.02)}
+.card-inner{
+  position:relative; width:100%; height:100%;
+  text-align:center; transition:transform 0.8s cubic-bezier(0.4,0,0.2,1);
+  transform-style:preserve-3d;
+}
+.appointment-card.flipped .card-inner{transform:rotateY(180deg)}
+.card-front, .card-back{
+  position:absolute; width:100%; height:100%; backface-visibility:hidden;
+  background:var(--glass-bg); backdrop-filter:blur(20px) saturate(180%);
+  border:1px solid var(--glass-border); border-radius:16px;
+  padding:1.5rem; display:flex; flex-direction:column;
+}
+.card-back{transform:rotateY(180deg)}
+.card-front{justify-content:space-between}
+.appointment-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem}
+.patient-name{font-size:1.2rem;font-weight:700;color:var(--text-primary);letter-spacing:-0.02em}
+.status-badge{
+  padding:0.4rem 0.8rem; border-radius:20px; font-size:0.75rem;
+  font-weight:700; text-transform:uppercase; letter-spacing:0.5px;
+}
+.status-pending{background:rgba(245,158,11,0.2);color:#f59e0b;border:1px solid rgba(245,158,11,0.3)}
+.status-confirmed{background:rgba(16,185,129,0.2);color:#10b981;border:1px solid rgba(16,185,129,0.3)}
+.status-cancelled{background:rgba(239,68,68,0.2);color:#ef4444;border:1px solid rgba(239,68,68,0.3)}
+.appointment-summary{flex:1;display:flex;flex-direction:column;gap:0.75rem}
+.summary-item{display:flex;align-items:center;gap:0.75rem;font-size:0.9rem;color:var(--text-secondary)}
+.tap-hint{
+  text-align:center; color:var(--text-muted); font-size:0.8rem;
+  padding:0.5rem; border-radius:8px; background:rgba(255,255,255,0.05);
+  margin-top:auto;
+}
+.card-back{justify-content:flex-start;gap:1.5rem}
+.appointment-details{flex:1;display:flex;flex-direction:column;gap:1rem}
+.detail-row{display:flex;justify-content:space-between;align-items:center;font-size:0.9rem}
+.detail-label{color:var(--text-muted);font-weight:500}
+.detail-value{color:var(--text-primary);font-weight:600;text-align:right}
+.card-actions{display:flex;gap:0.75rem;margin-top:auto}
+.btn{
+  flex:1; padding:0.75rem; border:none; border-radius:10px;
+  font-weight:600; font-size:0.85rem; cursor:pointer;
+  transition:all 0.3s ease; text-transform:uppercase; letter-spacing:0.5px;
+}
+.btn-primary{background:var(--accent);color:#001f25}
+.btn-primary:hover{background:var(--accent-hover);transform:translateY(-2px)}
+.btn-secondary{background:rgba(255,255,255,0.1);color:var(--text-secondary);border:1px solid var(--glass-border)}
+.btn-secondary:hover{background:rgba(255,255,255,0.15);color:var(--text-primary)}
+.btn-danger{background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3)}
+.btn-danger:hover{background:rgba(239,68,68,0.25)}
+
+/* Mobile responsive adjustments */
+@media(max-width:768px){
+  .appointment-card{height:auto;min-height:160px}
+  .patient-name{font-size:1rem}
+  .summary-item{font-size:0.85rem}
+  .detail-row{flex-direction:column;align-items:flex-start;gap:0.25rem}
+  .detail-value{text-align:left;font-size:0.85rem}
+  .card-actions{flex-direction:column}
+  .btn{width:100%}
+  .kpis{grid-template-columns:repeat(2,1fr)}
+}
 </style></head><body>
 
 <div class="lang-toggle">
@@ -823,9 +824,15 @@ ADMIN_LOGIN_HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8"
  </div>
 
  {% if error %}<div class="error">{{error}}</div>{% endif %}
+ {% if debug %}
+ <div class="error" style="margin-top:1rem">
+   debug=true • admin_token={{ admin_token }} • token={{ request.args.get('token', '') }} • header={{ request.headers.get('X-Admin-Token', '') }} • cookie={{ request.cookies.get(ADMIN_COOKIE, '') }}
+ </div>
+ {% endif %}
 </div>
 
 <script>
+let filteredData = [];
 let currentLang = 'en';
 
 function setLang(lang) {
@@ -996,9 +1003,7 @@ ADMIN_VIEW_HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8">
    box-shadow:0 8px 32px var(--shadow);
  }
  .panel h2{font-size:1.1rem;font-weight:600;margin:0 0 1.5rem;color:var(--text-secondary);letter-spacing:-0.01em}
- .panel canvas{display:block;width:100% !important;max-height:400px !important}
- .panel.chart-circle{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem}
- .panel.chart-circle canvas{aspect-ratio:1/1 !important;width:min(100%,350px) !important;height:auto !important;max-height:350px !important}
+ .panel canvas{display:block;width:100% !important;aspect-ratio:1/1;max-height:min(300px,60vw)}
  
  .bar2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem}
  
@@ -1072,9 +1077,7 @@ ADMIN_VIEW_HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8">
  th{color:var(--text-muted);font-weight:600;font-size:0.85rem;text-transform:uppercase;letter-spacing:0.05em}
  td{color:var(--text-secondary)}
  tr:last-child td{border-bottom:0}
- tbody tr{cursor:pointer;transition:all 0.2s ease}
- tbody tr:hover{background:rgba(95,227,214,0.1);transform:scale(1.005)}
- tbody tr:active{transform:scale(0.998)}
+ tbody tr:hover{background:rgba(255,255,255,0.03)}
  
  .pill{
    display:inline-block;
@@ -1091,72 +1094,6 @@ ADMIN_VIEW_HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8">
  .cancelled{background:rgba(245,154,154,0.2);color:#f59a9a;border:1px solid rgba(245,154,154,0.3)}
  
  .sel{opacity:0.5}
-/* ══════════════════════════════════════════════
-   THEME SYSTEM - Dark & Light Mode
-══════════════════════════════════════════════ */
-:root {
-  /* Light Theme (Default) */
-  --bg-gradient-start: #f0f4f8;
-  --bg-gradient-end: #d9e2ec;
-  --glass-bg: rgba(255,255,255,0.9);
-  --glass-border: rgba(0,0,0,0.1);
-  --text-primary: #102a43;
-  --text-secondary: #334e68;
-  --text-muted: #627d98;
-  --accent: #00a8b5;
-  --accent-hover: #008891;
-  --shadow: rgba(0,0,0,0.1);
-}
-
-[data-theme="dark"] {
-  /* Dark Theme */
-  --bg-gradient-start: #001f25;
-  --bg-gradient-end: #003d47;
-  --glass-bg: rgba(255,255,255,0.08);
-  --glass-border: rgba(255,255,255,0.12);
-  --text-primary: #ffffff;
-  --text-secondary: rgba(255,255,255,0.75);
-  --text-muted: rgba(255,255,255,0.5);
-  --accent: #5fe3d6;
-  --accent-hover: #00b8a3;
-  --shadow: rgba(0,0,0,0.3);
-}
-
-/* Theme Toggle Button */
-.theme-toggle {
-  position: fixed;
-  top: 1rem;
-  right: 1rem;
-  z-index: 1000;
-  background: var(--glass-bg);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--glass-border);
-  border-radius: 50px;
-  padding: 0.5rem 1rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px var(--shadow);
-}
-
-.theme-toggle:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px var(--shadow);
-}
-
-.theme-toggle svg {
-  width: 20px;
-  height: 20px;
-  fill: var(--accent);
-  transition: transform 0.3s ease;
-}
-
-.theme-toggle:hover svg {
-  transform: rotate(20deg);
-}
-
  .tag{
    font-size:0.7rem;
    color:var(--accent);
@@ -1165,6 +1102,37 @@ ADMIN_VIEW_HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8">
    border-radius:6px;
    margin-left:0.4rem;
  }
+ .appointments-grid{
+   display:grid;
+   grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+   gap:1.2rem;
+   align-items:start;
+ }
+.appointment-card{cursor:pointer;min-height:260px;perspective:1000px;-webkit-perspective:1000px;}
+.card-inner{position:relative;width:100%;transition:transform .35s ease;transform-style:preserve-3d;will-change:transform;min-height:260px}
+ .card-inner.flipped{transform:rotateY(180deg)}
+ .card-front,.card-back{backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:18px;border:1px solid var(--glass-border);background:var(--glass-bg);backdrop-filter:blur(16px) saturate(180%);-webkit-backdrop-filter:blur(16px) saturate(180%);box-shadow:0 8px 32px var(--shadow);padding:1.2rem;color:var(--text-primary)}
+ .card-front{position:relative;z-index:2}
+ .card-back{position:absolute;inset:0;z-index:3;transform:rotateY(180deg);display:flex;flex-direction:column;gap:16px;padding:1.2rem;overflow:auto}
+ .appointment-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+ .patient-name{font-size:1rem;font-weight:600;color:var(--white)}
+ .status-badge{padding:3px 10px;border-radius:999px;font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+ .status-pending{background:rgba(232,245,154,.2);color:#e8f59a;border:1px solid rgba(232,245,154,.3)}
+ .status-confirmed{background:rgba(154,242,201,.2);color:#9af2c9;border:1px solid rgba(154,242,201,.3)}
+ .status-completed{background:rgba(159,217,242,.2);color:#9fd9f2;border:1px solid rgba(159,217,242,.3)}
+ .status-cancelled{background:rgba(245,154,154,.2);color:#f59a9a;border:1px solid rgba(245,154,154,.3)}
+ .appointment-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.5rem .75rem}
+ .summary-item{font-size:.9rem;color:var(--text-secondary);display:flex;align-items:center;gap:.4rem}
+ .tap-hint{font-size:.78rem;color:var(--text-muted);margin-top:.8rem}
+ .appointment-details{display:flex;flex-direction:column;gap:.6rem}
+ .detail-row{display:flex;justify-content:space-between;gap:1rem;font-size:.9rem}
+ .detail-label{color:var(--text-muted)}
+ .detail-value{color:var(--text-primary);font-weight:500;word-break:break-word}
+ .card-actions{display:flex;flex-wrap:wrap;gap:.5rem}
+ .btn-secondary,.btn-primary,.btn-danger{padding:.45rem .9rem;border-radius:10px;font-size:.82rem;font-weight:700;cursor:pointer;border:0;transition:all .3s ease}
+ .btn-secondary{background:rgba(255,255,255,.08);color:var(--text-secondary);border:1px solid rgba(255,255,255,.15)}
+ .btn-primary{background:linear-gradient(135deg,#5fe3d0,#00b8a3);color:#001f25}
+ .btn-danger{background:#ef4444;color:#fff}
 </style></head><body>
 
 <header>
@@ -1176,24 +1144,6 @@ ADMIN_VIEW_HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8">
     </div>
     <a class="logout" href="/admin/logout" data-en="Logout" data-es="Cerrar sesión">Logout</a>
   </div>
-
-  <!-- Theme Toggle -->
-  <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark/light theme" title="Switch theme">
-    <svg id="theme-icon-sun" viewBox="0 0 24 24" style="display:none;">
-      <circle cx="12" cy="12" r="5"/>
-      <line x1="12" y1="1" x2="12" y2="3"/>
-      <line x1="12" y1="21" x2="12" y2="23"/>
-      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-      <line x1="1" y1="12" x2="3" y2="12"/>
-      <line x1="21" y1="12" x2="23" y2="12"/>
-      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-    </svg>
-    <svg id="theme-icon-moon" viewBox="0 0 24 24">
-      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-    </svg>
-  </button>
 </header>
 
 <div class="container">
@@ -1204,7 +1154,7 @@ ADMIN_VIEW_HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8">
       <h2 data-en="Appointments per day (last 90 days)" data-es="Citas por día (últimos 90 días)">Appointments per day (last 90 days)</h2>
       <canvas id="cDay"></canvas>
     </div>
-    <div class="panel chart-circle">
+    <div class="panel">
       <h2 data-en="By Status" data-es="Por estado">By Status</h2>
       <canvas id="cStatus"></canvas>
     </div>
@@ -1215,7 +1165,7 @@ ADMIN_VIEW_HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8">
       <h2 data-en="By Service" data-es="Por servicio">By Service</h2>
       <canvas id="cService"></canvas>
     </div>
-    <div class="panel chart-circle">
+    <div class="panel">
       <h2 data-en="Real vs. Dummy" data-es="Reales vs. Dummy">Real vs. Dummy</h2>
       <canvas id="cMix"></canvas>
     </div>
@@ -1242,22 +1192,8 @@ ADMIN_VIEW_HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8">
     <span class="cnt" id="cnt"></span>
   </div>
   
-  <div class="table-container">
-    <table>
-      <thead><tr>
-        <th>#</th>
-        <th data-en="Name" data-es="Nombre">Name</th>
-        <th data-en="Phone" data-es="Teléfono">Phone</th>
-        <th data-en="Email" data-es="Correo">Email</th>
-        <th data-en="Date" data-es="Fecha">Date</th>
-        <th data-en="Time" data-es="Hora">Time</th>
-        <th data-en="Service" data-es="Servicio">Service</th>
-        <th data-en="Message" data-es="Mensaje">Message</th>
-        <th data-en="Status" data-es="Estado">Status</th>
-        <th data-en="Action" data-es="Acción">Action</th>
-      </tr></thead>
-      <tbody id="rows"></tbody>
-    </table>
+  <div class="container">
+    <div id="appointmentsGrid" class="appointments-grid"></div>
   </div>
 </div>
 
@@ -1315,64 +1251,6 @@ function setLang(lang) {
   // Redraw charts with new language
   if (statsData) charts(statsData);
   load();
-
-// Theme toggle functionality
-function toggleTheme() {
-  const html = document.documentElement;
-  const currentTheme = html.getAttribute('data-theme') || 'light';
-  const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-  
-  html.setAttribute('data-theme', newTheme);
-  localStorage.setItem('adminTheme', newTheme);
-  
-  // Toggle icons
-  document.getElementById('theme-icon-sun').style.display = newTheme === 'dark' ? 'block' : 'none';
-  document.getElementById('theme-icon-moon').style.display = newTheme === 'dark' ? 'none' : 'block';
-  
-  // Update chart colors
-  if (typeof chartInstances !== 'undefined') {
-    updateChartColors(newTheme);
-  }
-}
-
-// Load saved theme on page load
-(function() {
-  const savedTheme = localStorage.getItem('adminTheme') || 'dark';
-  document.documentElement.setAttribute('data-theme', savedTheme);
-  
-  // Set correct icon on load
-  if (document.getElementById('theme-icon-sun')) {
-    document.getElementById('theme-icon-sun').style.display = savedTheme === 'dark' ? 'block' : 'none';
-    document.getElementById('theme-icon-moon').style.display = savedTheme === 'dark' ? 'none' : 'block';
-  }
-})();
-
-function updateChartColors(theme) {
-  const isDark = theme === 'dark';
-  const textColor = isDark ? 'rgba(255,255,255,0.75)' : '#334e68';
-  const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
-  
-  Object.values(chartInstances).forEach(chart => {
-    if (chart && chart.options) {
-      // Update text colors
-      if (chart.options.scales) {
-        if (chart.options.scales.x) {
-          chart.options.scales.x.ticks.color = textColor;
-          chart.options.scales.x.grid.color = gridColor;
-        }
-        if (chart.options.scales.y) {
-          chart.options.scales.y.ticks.color = textColor;
-          chart.options.scales.y.grid.color = gridColor;
-        }
-      }
-      if (chart.options.plugins && chart.options.plugins.legend) {
-        chart.options.plugins.legend.labels.color = textColor;
-      }
-      chart.update();
-    }
-  });
-}
-
 }
 
 const COL = {pending:'#e8f59a',confirmed:'#9af2c9',completed:'#9fd9f2',cancelled:'#f59a9a'};
@@ -1380,34 +1258,55 @@ const TOK = () => (document.cookie.match(/dds_admin=([^;]+)/)||[,location.search
 const qp = () => `dummy=${fDummy.value}&status=${fStatus.value}`;
 const t = (key) => TRANSLATIONS[currentLang][key];
 
-function load() {
-  fetch('/api/admin/bookings?'+qp(),{headers:{'X-Admin-Token':''}})
-  .then(r=>r.json())
-  .then(d=>{
-    if(d.error){location.href='/admin';return;}
-    rows.innerHTML=d.rows.map(r=>`
-      <tr class="${r.is_dummy?'sel':''}" onclick="openMedicalRecord(${r.id}, event)" data-booking-id="${r.id}">
-        <td>${r.id}${r.is_dummy?` <span class="tag">${t('dummy')}</span>`:''}</td>
-        <td>${esc(r.name)}</td>
-        <td>${esc(r.phone||'')}</td>
-        <td>${esc(r.email||'')}</td>
-        <td>${r.preferred_date||'—'}</td>
-        <td>${r.preferred_time||'—'}</td>
-        <td>${esc(r.service||'—')}</td>
-        <td>${esc((r.message||'').slice(0,80))}</td>
-        <td><span class="pill ${r.status}">${r.status}</span></td>
-        <td><select onchange="setStatus(${r.id},this.value)">
-          <option value="">—</option>
-          <option value="confirmed">${t('confirm')}</option>
-          <option value="completed">${t('complete')}</option>
-          <option value="cancelled">${t('cancel')}</option>
-        </select></td>
-      </tr>`).join('');
-    cnt.textContent = `${d.count} ${t('appointments')}`;
-    csv.href='/api/bookings.csv?dummy='+fDummy.value+'&token='+encodeURIComponent(TOK());
-  })
-  .catch(()=>location.href='/admin');
+function adminStatus(msg, isError=false){
+  let el = document.getElementById('adminStatus');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'adminStatus';
+    el.style.cssText = 'position:fixed;left:12px;right:12px;bottom:12px;padding:.8rem 1rem;border-radius:12px;font:.85rem/1.3 system-ui,sans-serif;z-index:9999';
+    document.body.appendChild(el);
+  }
+  el.style.background = isError ? 'rgba(255,107,107,0.22)' : 'rgba(95,227,214,0.18)';
+  el.style.color = isError ? '#ffb3b3' : '#c7fff6';
+  el.style.border = isError ? '1px solid rgba(255,107,107,0.35)' : '1px solid rgba(95,227,214,0.3)';
+  el.textContent = '[admin] ' + msg;
 }
+
+function debugApi(path){
+  const box = document.getElementById('adminDebug');
+  const line = document.createElement('div');
+  line.style.cssText='font-size:.75rem;padding:.25rem 0;border-bottom:1px solid rgba(255,255,255,0.08)';
+  box.appendChild(line);
+  try{
+    fetch(path,{headers:{'X-Admin-Token': TOK()}}).then(async r=>{
+      const body = await r.text().catch(()=>'<text-failed>');
+      line.textContent = path + ' -> ' + r.status + ' ' + r.statusText + ' ; token=' + TOK() + ' ; body=' + String(body).slice(0,400);
+    }).catch(e=> line.textContent = path + ' -> FETCH_ERR ' + e.message + ' ; token=' + TOK());
+  }catch(e){ line.textContent = path + ' -> SCRIPT_ERR ' + e.message; }
+}
+
+function load() {
+  fetch('/api/admin/bookings?'+qp(),{headers:{'X-Admin-Token': TOK()}})
+  .then(r=>r.json().then(d => ({r,d})).catch(e=>({r:{status:0},d:{error:'Network error: '+String(e)}})))
+  .then(o=>{
+    if(o.r.status === 401 || o.r.status === 403){
+      adminStatus('Unauthorized: ' + ((o.d && o.d.error) || o.r.status), true);
+      location.href='/admin'; 
+      return;
+    }
+    if(o.d && o.d.error){
+      adminStatus('Backend error: ' + o.d.error, true);
+      console.warn(o.d);
+    } else {
+      adminStatus('Loaded ' + ((o.d && o.d.count)||0) + ' appointments');
+    }
+    filteredData = (o.d && o.d.rows) || [];
+    renderAppointmentsGrid();
+    cnt.textContent = `${(o.d && o.d.count) || 0} ${t('appointments')}`;
+    csv.href='/api/bookings.csv?dummy='+fDummy.value+'&token='+encodeURIComponent(TOK());
+  });
+}
+let filteredData = [];
 
 function setStatus(id,s){
   if(!s)return;
@@ -1420,15 +1319,6 @@ function setStatus(id,s){
 
 function esc(s){return (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
 
-// Open medical records in new tab
-function openMedicalRecord(bookingId, event) {
-  // Prevent if clicking on select/dropdown
-  if (event.target.tagName === 'SELECT' || event.target.closest('select')) {
-    return;
-  }
-  const medicalRecordsUrl = '/admin/medical-records?booking_id=' + bookingId;
-  window.open(medicalRecordsUrl, '_blank', 'width=1400,height=900,scrollbars=yes,resizable=yes');
-}
 let chartInstances = {};
 
 function charts(s) {
@@ -1524,7 +1414,7 @@ const savedLang = localStorage.getItem('adminLang') || 'en';
 currentLang = savedLang;
 setLang(savedLang);
 
-fetch('/api/admin/stats')
+fetch('/api/admin/stats',{headers:{'X-Admin-Token': TOK()}})
   .then(r=>r.json())
   .then(charts)
   .catch(e=>console.warn('stats',e));
@@ -1532,64 +1422,6 @@ fetch('/api/admin/stats')
 fDummy.onchange = load;
 fStatus.onchange = load;
 load();
-
-// Theme toggle functionality
-function toggleTheme() {
-  const html = document.documentElement;
-  const currentTheme = html.getAttribute('data-theme') || 'light';
-  const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-  
-  html.setAttribute('data-theme', newTheme);
-  localStorage.setItem('adminTheme', newTheme);
-  
-  // Toggle icons
-  document.getElementById('theme-icon-sun').style.display = newTheme === 'dark' ? 'block' : 'none';
-  document.getElementById('theme-icon-moon').style.display = newTheme === 'dark' ? 'none' : 'block';
-  
-  // Update chart colors
-  if (typeof chartInstances !== 'undefined') {
-    updateChartColors(newTheme);
-  }
-}
-
-// Load saved theme on page load
-(function() {
-  const savedTheme = localStorage.getItem('adminTheme') || 'dark';
-  document.documentElement.setAttribute('data-theme', savedTheme);
-  
-  // Set correct icon on load
-  if (document.getElementById('theme-icon-sun')) {
-    document.getElementById('theme-icon-sun').style.display = savedTheme === 'dark' ? 'block' : 'none';
-    document.getElementById('theme-icon-moon').style.display = savedTheme === 'dark' ? 'none' : 'block';
-  }
-})();
-
-function updateChartColors(theme) {
-  const isDark = theme === 'dark';
-  const textColor = isDark ? 'rgba(255,255,255,0.75)' : '#334e68';
-  const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
-  
-  Object.values(chartInstances).forEach(chart => {
-    if (chart && chart.options) {
-      // Update text colors
-      if (chart.options.scales) {
-        if (chart.options.scales.x) {
-          chart.options.scales.x.ticks.color = textColor;
-          chart.options.scales.x.grid.color = gridColor;
-        }
-        if (chart.options.scales.y) {
-          chart.options.scales.y.ticks.color = textColor;
-          chart.options.scales.y.grid.color = gridColor;
-        }
-      }
-      if (chart.options.plugins && chart.options.plugins.legend) {
-        chart.options.plugins.legend.labels.color = textColor;
-      }
-      chart.update();
-    }
-  });
-}
-
 
 // Read/Unread filter handling
 let currentReadFilter = '';
@@ -1609,64 +1441,6 @@ document.getElementById('fRead').addEventListener('click', function() {
 function setReadFilter(filter) {
   currentReadFilter = filter;
   load();
-
-// Theme toggle functionality
-function toggleTheme() {
-  const html = document.documentElement;
-  const currentTheme = html.getAttribute('data-theme') || 'light';
-  const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-  
-  html.setAttribute('data-theme', newTheme);
-  localStorage.setItem('adminTheme', newTheme);
-  
-  // Toggle icons
-  document.getElementById('theme-icon-sun').style.display = newTheme === 'dark' ? 'block' : 'none';
-  document.getElementById('theme-icon-moon').style.display = newTheme === 'dark' ? 'none' : 'block';
-  
-  // Update chart colors
-  if (typeof chartInstances !== 'undefined') {
-    updateChartColors(newTheme);
-  }
-}
-
-// Load saved theme on page load
-(function() {
-  const savedTheme = localStorage.getItem('adminTheme') || 'dark';
-  document.documentElement.setAttribute('data-theme', savedTheme);
-  
-  // Set correct icon on load
-  if (document.getElementById('theme-icon-sun')) {
-    document.getElementById('theme-icon-sun').style.display = savedTheme === 'dark' ? 'block' : 'none';
-    document.getElementById('theme-icon-moon').style.display = savedTheme === 'dark' ? 'none' : 'block';
-  }
-})();
-
-function updateChartColors(theme) {
-  const isDark = theme === 'dark';
-  const textColor = isDark ? 'rgba(255,255,255,0.75)' : '#334e68';
-  const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
-  
-  Object.values(chartInstances).forEach(chart => {
-    if (chart && chart.options) {
-      // Update text colors
-      if (chart.options.scales) {
-        if (chart.options.scales.x) {
-          chart.options.scales.x.ticks.color = textColor;
-          chart.options.scales.x.grid.color = gridColor;
-        }
-        if (chart.options.scales.y) {
-          chart.options.scales.y.ticks.color = textColor;
-          chart.options.scales.y.grid.color = gridColor;
-        }
-      }
-      if (chart.options.plugins && chart.options.plugins.legend) {
-        chart.options.plugins.legend.labels.color = textColor;
-      }
-      chart.update();
-    }
-  });
-}
-
 }
 
 function setActiveReadButton(activeBtn) {
@@ -1678,7 +1452,7 @@ function setActiveReadButton(activeBtn) {
 
 // Mark as read/unread functions
 function markAsRead(id) {
-  fetch('/api/admin/bookings/' + id + '/mark-read', {
+  fetch('/api/admin/bookings/' + id + '/mark-read', {headers:{'X-Admin-Token': TOK()},
     method: 'PATCH',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({read_status: 'read'})
@@ -1686,14 +1460,198 @@ function markAsRead(id) {
 }
 
 function markAsUnread(id) {
-  fetch('/api/admin/bookings/' + id + '/mark-read', {
+  fetch('/api/admin/bookings/' + id + '/mark-read', {headers:{'X-Admin-Token': TOK()},
     method: 'PATCH',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({read_status: 'unread'})
   }).then(() => load()).catch(console.error);
 }
 
-</script>
+
+let appointmentInteractionsInitialized = false;
+
+function renderAppointmentsGrid() {
+  const grid = document.getElementById('appointmentsGrid') || createAppointmentsGrid();
+  
+  if (filteredData.length === 0) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--text-muted)">No appointments found</div>';
+    initAppointmentInteractions();
+    return;
+  }
+  
+  grid.innerHTML = filteredData.map(booking => createAppointmentCard(booking)).join('');
+  initAppointmentInteractions();
+}
+
+function createAppointmentsGrid() {
+  const grid = document.createElement('div');
+  grid.id = 'appointmentsGrid';
+  grid.className = 'appointments-grid';
+  document.querySelector('.container').appendChild(grid);
+  return grid;
+}
+
+function createAppointmentCard(booking) {
+  const statusClass = `status-${booking.status || 'pending'}`;
+  const statusLabel = getStatusLabel(booking.status || 'pending');
+  const date = formatDate(booking.preferred_date);
+  const time = booking.preferred_time || 'Not specified';
+
+  return `
+    <div class="appointment-card" data-id="${booking.id}" data-status="${booking.status || 'pending'}">
+      <div class="card-inner">
+        <div class="card-front">
+          <div class="field-labels">
+            <span class="field-label">Name</span>
+            <span class="field-label">Phone</span>
+            <span class="field-label">Email</span>
+            <span class="field-label">Date</span>
+            <span class="field-label">Time</span>
+            <span class="field-label">Service</span>
+          </div>
+          <div class="appointment-header">
+            <div class="patient-name">${escapeHtml(booking.name)}</div>
+            <div class="status-badge ${statusClass}">${statusLabel}</div>
+          </div>
+          <div class="appointment-summary">
+            <div class="summary-item">📅 ${date}</div>
+            <div class="summary-item">⏰ ${time}</div>
+            ${booking.service ? `<div class="summary-item">🩺 ${escapeHtml(booking.service)}</div>` : ''}
+          </div>
+          <div class="tap-hint">Tap or double-click for details</div>
+        </div>
+        <div class="card-back">
+          <div class="appointment-details">
+            <div class="detail-row">
+              <span class="detail-label">Patient:</span>
+              <span class="detail-value">${escapeHtml(booking.name)}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Email:</span>
+              <span class="detail-value">${escapeHtml(booking.email || 'Not provided')}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Phone:</span>
+              <span class="detail-value">${escapeHtml(booking.phone || 'Not provided')}</span>
+            </div>
+          </div>
+          <div class="card-actions">
+            <button class="btn btn-secondary" data-act="close">Close</button>
+            <button class="btn btn-primary" data-act="view">Open full</button>
+            <button class="btn btn-primary" data-act="confirm">Confirm</button>
+            <button class="btn btn-danger" data-act="cancel">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function flipCard(cardElement) {
+  cardElement.classList.toggle('flipped');
+}
+
+function getStatusLabel(status) {
+  const labels = {'pending': 'Pending', 'confirmed': 'Confirmed', 'cancelled': 'Cancelled', 'completed':'Completed'};
+  return labels[status] || 'Pending';
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return 'Not specified';
+  try {
+    const d = new Date(dateStr + 'T00:00:00');
+    return d.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+  } catch (e) {
+    return dateStr || 'Not specified';
+  }
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text || '';
+  return div.innerHTML;
+}
+
+function initAppointmentInteractions() {
+  if (appointmentInteractionsInitialized) return;
+  appointmentInteractionsInitialized = true;
+  let tapTimer = null;
+
+  function flip(card) { card.classList.toggle('flipped'); }
+
+  document.addEventListener('click', (e) => {
+    const action = e.target.closest('[data-act]');
+    if (action) {
+      const card = action.closest('.appointment-card');
+      const act = action.getAttribute('data-act');
+      const id = card ? card.getAttribute('data-id') : null;
+      if (!id) return;
+      if (act === 'close') { flip(card); return; }
+      if (act === 'view') {
+        if (card && card.classList.contains('flipped')) {
+          flip(card);
+        }
+        window.open('/admin/appointment/' + id, '_blank');
+        return;
+      }
+      if (act === 'confirm') { patchStatus(id, 'confirmed'); return; }
+      if (act === 'cancel') { patchStatus(id, 'cancelled'); return; }
+      return;
+    }
+
+    const card = e.target.closest('.appointment-card');
+    if (!card) return;
+    if (e.target.closest('[data-act]')) return;
+    flip(card);
+  });
+
+  document.addEventListener('dblclick', (e) => {
+    const card = e.target.closest('.appointment-card');
+    if (!card) return;
+    if (tapTimer) { clearTimeout(tapTimer); tapTimer = null; }
+    const id = card.getAttribute('data-id');
+    if (id) window.open('/admin/appointment/' + id, '_blank');
+  });
+}
+
+function confirmAppointment(id) { patchStatus(id, 'confirmed'); }
+function cancelAppointment(id) { patchStatus(id, 'cancelled'); }
+
+async function patchStatus(id, status) {
+  const card = document.querySelector('.appointment-card[data-id="' + id + '"]');
+  const button = card ? card.querySelector('[data-act="' + status + '"]') : null;
+  if (button) { button.disabled = true; button.textContent = status === 'confirmed' ? 'Confirming…' : 'Cancelling…'; }
+  try {
+    const res = await fetch('/api/admin/bookings/' + id, { method:'PATCH', headers:{'Content-Type':'application/json','X-Admin-Token': TOK()}, body: JSON.stringify({ status }) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+    if (card) {
+      const badge = card.querySelector('.status-badge');
+      if (badge) { badge.className = 'status-badge status-' + status; badge.textContent = getStatusLabel(status); }
+      const hint = card.querySelector('.tap-hint');
+      if (hint) hint.textContent = status === 'confirmed' ? 'Confirmed' : 'Cancelled';
+    }
+    showToast(status === 'confirmed' ? 'Appointment confirmed' : 'Appointment cancelled');
+  } catch (err) {
+    showToast(err.message || 'Action failed', 'error');
+    if (button) { button.disabled = false; button.textContent = status === 'confirmed' ? 'Confirm' : 'Cancel'; }
+  }
+}
+
+function showToast(message, type = 'success') {
+  const el = document.createElement('div');
+  el.style.cssText = 'position:fixed;top:18px;right:18px;z-index:12000;padding:12px 16px;border-radius:14px;color:#fff;font-weight:600;font-size:14px;background:' + (type === 'success' ? '#10b981' : '#ef4444') + ';box-shadow:0 10px 30px rgba(0,0,0,.25);opacity:0;transform:translateY(-10px);transition:all .35s ease';
+  el.textContent = message;
+  document.body.appendChild(el);
+  requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translateY(0)'; });
+  setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateY(-10px)'; setTimeout(() => el.remove(), 400); }, 2400);
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initAppointmentInteractions);
+} else {
+  initAppointmentInteractions();
+}</script>
 </body></html>"""
 
 
@@ -2073,234 +2031,5 @@ def admin_complete_visit(visit_id):
         # This will be implemented next
         
         return jsonify({"success": True, "visit_data": visit_data})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-MEDICAL_RECORDS_TEMPLATE = '''<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Medical Records - {{ booking.name }}</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        :root {
-            --bg-gradient-start: #001f25; --bg-gradient-end: #003d47;
-            --glass-bg: rgba(255,255,255,0.08); --glass-border: rgba(255,255,255,0.12);
-            --text-primary: #ffffff; --text-secondary: rgba(255,255,255,0.75);
-            --text-muted: rgba(255,255,255,0.5); --accent: #5fe3d6;
-            --accent-hover: #00b8a3; --shadow: rgba(0,0,0,0.3);
-            --success: #10b981; --error: #ef4444;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
-            color: var(--text-primary); min-height: 100vh; overflow-x: hidden; padding: 1rem;
-        }
-        .medical-container { max-width: 1400px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-        .medical-panel {
-            background: var(--glass-bg); backdrop-filter: blur(24px) saturate(180%);
-            -webkit-backdrop-filter: blur(24px) saturate(180%); border: 1px solid var(--glass-border);
-            border-radius: 16px; padding: 1.5rem; box-shadow: 0 8px 32px var(--shadow);
-        }
-        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 2px solid var(--accent); padding-bottom: 1rem; }
-        .panel-title { font-size: 1.3rem; font-weight: 700; color: var(--accent); }
-        .close-btn {
-            background: var(--error); color: white; border: none; width: 32px; height: 32px;
-            border-radius: 50%; cursor: pointer; display: flex; align-items: center;
-            justify-content: center; font-weight: bold; aspect-ratio: 1 / 1; transition: all 0.3s ease;
-        }
-        .close-btn:hover { transform: scale(1.1); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4); }
-        .patient-info { background: rgba(95, 227, 214, 0.1); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; border-left: 4px solid var(--accent); }
-        .patient-info h3 { color: var(--accent); margin-bottom: 1rem; font-size: 1.1rem; }
-        .patient-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; }
-        .detail-item { display: flex; flex-direction: column; gap: 0.4rem; }
-        .detail-label { font-size: 0.8rem; color: var(--text-secondary); font-weight: 500; }
-        .detail-value { color: var(--text-primary); font-weight: 600; font-size: 0.95rem; }
-        .form-section { margin-bottom: 1.5rem; }
-        .section-title { font-size: 1rem; font-weight: 600; color: var(--accent); margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--glass-border); }
-        .form-group { margin-bottom: 1rem; }
-        .form-label { display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 500; }
-        .form-input, .form-textarea, .form-select {
-            width: 100%; padding: 0.7rem; border: 2px solid var(--glass-border);
-            border-radius: 8px; background: var(--glass-bg); color: var(--text-primary);
-            font-size: 0.9rem; transition: all 0.3s ease;
-        }
-        .form-input:focus, .form-textarea:focus, .form-select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(95, 227, 214, 0.2); }
-        .form-textarea { min-height: 70px; resize: vertical; font-family: inherit; }
-        .action-buttons { display: flex; gap: 1rem; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--glass-border); }
-        .btn-primary, .btn-secondary { padding: 0.75rem 1.5rem; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; font-size: 0.9rem; }
-        .btn-primary { background: var(--accent); color: #000; flex: 1; }
-        .btn-primary:hover { background: var(--accent-hover); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(95, 227, 214, 0.3); }
-        .btn-secondary { background: transparent; color: var(--text-secondary); border: 2px solid var(--glass-border); }
-        .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
-        @media (max-width: 1024px) { .medical-container { grid-template-columns: 1fr; gap: 1rem; } }
-    </style>
-</head>
-<body>
-    <div class="medical-container">
-        <div class="medical-panel">
-            <div class="panel-header">
-                <h2 class="panel-title">Medical Record</h2>
-                <button class="close-btn" onclick="window.close()" title="Close">&times;</button>
-            </div>
-            <div class="patient-info">
-                <h3>Patient Information</h3>
-                <div class="patient-details">
-                    <div class="detail-item"><span class="detail-label">Name</span><span class="detail-value">{{ booking.name }}</span></div>
-                    <div class="detail-item"><span class="detail-label">Email</span><span class="detail-value">{{ booking.email or 'N/A' }}</span></div>
-                    <div class="detail-item"><span class="detail-label">Phone</span><span class="detail-value">{{ booking.phone }}</span></div>
-                    <div class="detail-item"><span class="detail-label">Service</span><span class="detail-value">{{ booking.service or 'General Consultation' }}</span></div>
-                    <div class="detail-item"><span class="detail-label">Date & Time</span><span class="detail-value">{{ booking.preferred_date or 'Not specified' }} {{ booking.preferred_time or '' }}</span></div>
-                    {% if booking.message %}
-                    <div class="detail-item" style="grid-column: 1 / -1;"><span class="detail-label">Patient Message</span><span class="detail-value">"{{ booking.message }}"</span></div>
-                    {% endif %}
-                </div>
-            </div>
-            <form id="medical-form" onsubmit="return saveMedicalRecord(event)">
-                <input type="hidden" name="booking_id" value="{{ booking.id }}">
-                <div class="form-section">
-                    <h3 class="section-title">Chief Complaint & Examination</h3>
-                    <div class="form-group"><label class="form-label">Chief Complaint</label><textarea class="form-textarea" name="chief_complaint" placeholder="Patient's main concern..."></textarea></div>
-                    <div class="form-group"><label class="form-label">Physical Examination</label><textarea class="form-textarea" name="physical_examination" placeholder="Physical examination findings..."></textarea></div>
-                </div>
-                <div class="form-section">
-                    <h3 class="section-title">Diagnosis & Treatment</h3>
-                    <div class="form-group"><label class="form-label">Diagnosis</label><textarea class="form-textarea" name="diagnosis" placeholder="Primary and secondary diagnoses..." required></textarea></div>
-                    <div class="form-group"><label class="form-label">Treatment Plan</label><textarea class="form-textarea" name="treatment_plan" placeholder="Treatment recommendations..." required></textarea></div>
-                </div>
-                <div class="form-section">
-                    <h3 class="section-title">Follow-up</h3>
-                    <div class="form-group"><label class="form-label">Follow-up Instructions</label><textarea class="form-textarea" name="follow_up_instructions" placeholder="Follow-up care..."></textarea></div>
-                    <div class="form-group"><label class="form-label">Next Appointment</label><input type="date" class="form-input" name="next_appointment"></div>
-                    <div class="form-group"><label class="form-label">Doctor's Notes</label><textarea class="form-textarea" name="doctor_notes" placeholder="Additional notes..."></textarea></div>
-                </div>
-                <div class="action-buttons">
-                    <button type="submit" class="btn-primary">Save Medical Record</button>
-                    <button type="button" class="btn-secondary" onclick="window.close()">Cancel</button>
-                </div>
-            </form>
-        </div>
-        <div class="medical-panel">
-            <div class="panel-header"><h2 class="panel-title">Booking Details</h2></div>
-            <div class="form-section">
-                <h3 class="section-title">Appointment Status</h3>
-                <div class="patient-details">
-                    <div class="detail-item"><span class="detail-label">Status</span><span class="detail-value" style="text-transform: capitalize;">{{ booking.status }}</span></div>
-                    <div class="detail-item"><span class="detail-label">Booking ID</span><span class="detail-value">#{{ booking.id }}</span></div>
-                    <div class="detail-item"><span class="detail-label">Created</span><span class="detail-value">{{ booking.created_at }}</span></div>
-                </div>
-            </div>
-            {% if booking.ip_address %}
-            <div class="form-section">
-                <h3 class="section-title">Device & Location</h3>
-                <div class="patient-details">
-                    <div class="detail-item"><span class="detail-label">IP Address</span><span class="detail-value">{{ booking.ip_address }}</span></div>
-                    {% if booking.ip_city %}<div class="detail-item"><span class="detail-label">Location</span><span class="detail-value">{{ booking.ip_city }}, {{ booking.ip_country }}</span></div>{% endif %}
-                    {% if booking.device_type %}<div class="detail-item"><span class="detail-label">Device</span><span class="detail-value">{{ booking.device_type }}</span></div>{% endif %}
-                    {% if booking.device_os %}<div class="detail-item"><span class="detail-label">OS</span><span class="detail-value">{{ booking.device_os }}</span></div>{% endif %}
-                    {% if booking.device_browser %}<div class="detail-item"><span class="detail-label">Browser</span><span class="detail-value">{{ booking.device_browser }}</span></div>{% endif %}
-                </div>
-            </div>
-            {% endif %}
-            {% if booking.address %}
-            <div class="form-section">
-                <h3 class="section-title">Visit Location</h3>
-                <div class="patient-details">
-                    <div class="detail-item" style="grid-column: 1 / -1;"><span class="detail-label">Address</span><span class="detail-value">{{ booking.address }}</span></div>
-                    {% if booking.address_city %}<div class="detail-item"><span class="detail-label">City</span><span class="detail-value">{{ booking.address_city }}</span></div>{% endif %}
-                    {% if booking.address_province %}<div class="detail-item"><span class="detail-label">Province</span><span class="detail-value">{{ booking.address_province }}</span></div>{% endif %}
-                </div>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-    <script>
-        async function saveMedicalRecord(event) {
-            event.preventDefault();
-            const form = event.target;
-            const formData = new FormData(form);
-            const data = Object.fromEntries(formData);
-            data.patient_name = "{{ booking.name }}";
-            data.patient_email = "{{ booking.email or '' }}";
-            data.patient_phone = "{{ booking.phone }}";
-            data.visit_date = "{{ booking.preferred_date or '' }}";
-            data.visit_time = "{{ booking.preferred_time or '' }}";
-            try {
-                const response = await fetch('/api/admin/visits', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                const result = await response.json();
-                if (result.success || result.ok || result.visit_id) {
-                    alert('Medical record saved successfully!');
-                    window.close();
-                } else {
-                    alert('Error: ' + (result.error || 'Unknown error'));
-                }
-            } catch (error) {
-                alert('Error: ' + error.message);
-            }
-            return false;
-        }
-    </script>
-</body>
-</html>
-'''
-
-@app.route("/admin/medical-records", methods=["GET"])
-def admin_medical_records():
-    """Serve medical records page for a specific booking"""
-    if not _admin_authed():
-        return redirect(url_for("admin_login_page"))
-    
-    booking_id = request.args.get("booking_id")
-    if not booking_id:
-        return jsonify({"error": "booking_id required"}), 400
-    
-    try:
-        conn = _db()
-        cur = conn.cursor()
-        
-        query = """
-            SELECT 
-                id, name, phone, email,
-                
-                service, preferred_date, preferred_time, message, status,
-                
-                
-                
-                created_at, updated_at
-            FROM bookings 
-            WHERE id = %s
-        """
-        cur.execute(query, (booking_id,))
-        cols = [d[0] for d in cur.description]
-        row = cur.fetchone()
-        
-        if not row:
-            cur.close()
-            conn.close()
-            return "Booking not found", 404
-        
-        booking = dict(zip(cols, row))
-        
-        for key in ['created_at', 'updated_at']:
-            if booking.get(key):
-                booking[key] = booking[key].strftime('%Y-%m-%d %H:%M')
-        for key in ['preferred_date', 'preferred_time']:
-            if booking.get(key):
-                booking[key] = str(booking[key])
-        
-        if booking.get('message'):
-            booking['message'] = booking['message'].replace('[READ] ', '').replace('[READ]', '')
-        
-        cur.close()
-        conn.close()
-        
-        return render_template_string(MEDICAL_RECORDS_TEMPLATE, booking=booking)
-        
     except Exception as e:
         return jsonify({"error": str(e)}), 500
