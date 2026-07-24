@@ -323,7 +323,6 @@ class MedicalRecordsManager {
             // Re-throw so caller knows save failed
             throw error;
         }
-        }
     }
 
     async submitVisit() {
