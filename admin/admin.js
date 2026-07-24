@@ -122,13 +122,19 @@
     sessionStorage.removeItem(SESSION_KEY);
   }
 
-  loginForm.addEventListener('submit', function (e) {
+  loginForm.addEventListener('submit', async function (e) {
     e.preventDefault();
     if (passInput.value === ADMIN_PASS) {
       passError.textContent = '';
       passInput.classList.remove('has-error');
       sessionStorage.setItem(SESSION_KEY, '1');
-      showApp();
+      try {
+        await showApp();
+      } catch (error) {
+        console.error('Error showing app:', error);
+        showToast('Error cargando datos: ' + error.message, 'red');
+        showLogin();
+      }
     } else {
       passError.textContent = 'Contraseña incorrecta.';
       passInput.classList.add('has-error');
@@ -154,10 +160,16 @@
      LOAD ALL DATA
   ══════════════════════════════════════════════ */
   async function loadAll() {
-    pendingReviews  = ReviewsDB.getPending();
-    approvedReviews = await ReviewsDB.fetchApproved(true);
-    appointments    = await loadAppointments();
-    renderAll();
+    try {
+      pendingReviews  = ReviewsDB.getPending();
+      approvedReviews = await ReviewsDB.fetchApproved(true);
+      appointments    = await loadAppointments();
+      renderAll();
+      showToast('Datos cargados exitosamente', 'green');
+    } catch (error) {
+      console.error('Error loading data:', error);
+      showToast('Error cargando datos: ' + error.message, 'red');
+    }
   }
 
   /* API host override UI */
@@ -202,18 +214,25 @@
   ══════════════════════════════════════════════ */
   async function loadAppointmentsFromAPI() {
     try {
-      const response = await fetch(`${getApiBase()}/api/bookings`, {
+      const baseUrl = getApiBase();
+      console.log('Loading appointments from API:', baseUrl);
+      
+      const response = await fetch(`${baseUrl}/api/bookings`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
         },
       });
 
+      console.log('API Response status:', response.status);
+
       if (!response.ok) {
+        console.error(`API returned ${response.status}`);
         throw new Error(`API returned ${response.status}`);
       }
 
       const data = await response.json();
+      console.log('API data received:', data);
       
       if (data.ok && data.bookings) {
         // Transform API data to match our local format
@@ -251,9 +270,10 @@
         }));
       }
 
+      console.warn('API response missing ok or bookings field');
       return [];
     } catch (err) {
-      console.warn('Failed to load appointments from API, falling back to localStorage:', err);
+      console.error('Failed to load appointments from API:', err);
       return null; // Signal fallback to localStorage
     }
   }
