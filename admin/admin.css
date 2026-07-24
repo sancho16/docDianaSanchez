@@ -667,3 +667,38 @@ body.light-theme .adm-footer {
     font-size: 0.85rem;
   }
 }
+
+/* ══════════════════════════════════════════════
+   DRAG & DROP NAV ITEMS
+   ══════════════════════════════════════════════ */
+.adm-drag-handle {
+  opacity: 0;
+  margin-right: 8px;
+  font-size: 14px;
+  color: var(--muted);
+  transition: var(--transition);
+  cursor: grab;
+  user-select: none;
+}
+
+.adm-nav__item:hover .adm-drag-handle {
+  opacity: 0.6;
+}
+
+.adm-nav__item:active .adm-drag-handle {
+  cursor: grabbing;
+}
+
+.adm-nav__item.dragging {
+  opacity: 0.5;
+  transform: scale(0.95);
+  cursor: grabbing;
+}
+
+.adm-nav__item.drag-over {
+  border-top: 2px solid var(--accent);
+}
+
+.adm-nav {
+  position: relative;
+}

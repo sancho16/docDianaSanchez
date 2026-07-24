@@ -10,6 +10,7 @@
   const APPT_KEY    = 'dds_appointments';
   const API_URL     = 'https://api.docdianasanchez.com';
   const API_HOST_KEY = 'dds_api_host';
+  const NAV_ORDER_KEY = 'dds_nav_order';  // Store navigation order
 
   /* ── State ── */
   let approvedReviews = [];
@@ -28,6 +29,115 @@
   const toast       = document.getElementById('adm-toast');
   const searchInput = document.getElementById('adm-search');
   const themeToggle = document.getElementById('theme-toggle');
+
+  /* ══════════════════════════════════════════════
+     DRAG & DROP NAVIGATION ITEMS
+  ══════════════════════════════════════════════ */
+  let draggedElement = null;
+
+  function initDragAndDrop() {
+    const navContainer = document.getElementById('adm-nav');
+    const navItems = navContainer.querySelectorAll('.adm-nav__item');
+
+    // Load saved order
+    loadNavOrder();
+
+    navItems.forEach(item => {
+      // Dragstart
+      item.addEventListener('dragstart', function(e) {
+        draggedElement = this;
+        this.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/html', this.innerHTML);
+      });
+
+      // Dragend
+      item.addEventListener('dragend', function(e) {
+        this.classList.remove('dragging');
+        navItems.forEach(item => item.classList.remove('drag-over'));
+        draggedElement = null;
+      });
+
+      // Dragover
+      item.addEventListener('dragover', function(e) {
+        if (e.preventDefault) {
+          e.preventDefault();
+        }
+        e.dataTransfer.dropEffect = 'move';
+        
+        if (draggedElement && draggedElement !== this) {
+          this.classList.add('drag-over');
+        }
+        return false;
+      });
+
+      // Dragleave
+      item.addEventListener('dragleave', function(e) {
+        this.classList.remove('drag-over');
+      });
+
+      // Drop
+      item.addEventListener('drop', function(e) {
+        if (e.stopPropagation) {
+          e.stopPropagation();
+        }
+
+        if (draggedElement && draggedElement !== this) {
+          // Swap elements
+          const allItems = Array.from(navContainer.querySelectorAll('.adm-nav__item'));
+          const draggedIndex = allItems.indexOf(draggedElement);
+          const droppedIndex = allItems.indexOf(this);
+
+          if (draggedIndex < droppedIndex) {
+            this.parentNode.insertBefore(draggedElement, this.nextSibling);
+          } else {
+            this.parentNode.insertBefore(draggedElement, this);
+          }
+
+          // Save new order
+          saveNavOrder();
+          showToast('Orden del menú guardado');
+        }
+
+        this.classList.remove('drag-over');
+        return false;
+      });
+    });
+  }
+
+  function saveNavOrder() {
+    const navContainer = document.getElementById('adm-nav');
+    const navItems = navContainer.querySelectorAll('.adm-nav__item');
+    const order = Array.from(navItems).map(item => item.getAttribute('data-tab'));
+    localStorage.setItem(NAV_ORDER_KEY, JSON.stringify(order));
+  }
+
+  function loadNavOrder() {
+    const savedOrder = localStorage.getItem(NAV_ORDER_KEY);
+    if (!savedOrder) return;
+
+    try {
+      const order = JSON.parse(savedOrder);
+      const navContainer = document.getElementById('adm-nav');
+      const navItems = navContainer.querySelectorAll('.adm-nav__item');
+      
+      // Create a map of data-tab to element
+      const itemMap = new Map();
+      navItems.forEach(item => {
+        itemMap.set(item.getAttribute('data-tab'), item);
+      });
+
+      // Reorder based on saved order
+      order.forEach(tabName => {
+        const item = itemMap.get(tabName);
+        if (item) {
+          navContainer.appendChild(item);
+        }
+      });
+    } catch (e) {
+      console.error('Error loading nav order:', e);
+    }
+  }
 
   /* ══════════════════════════════════════════════
      THEME TOGGLE
@@ -1053,6 +1163,7 @@
      INIT
   ══════════════════════════════════════════════ */
   loadTheme();
+  initDragAndDrop();  // Initialize drag & drop for nav items
   // User is already authenticated (server checked), load data immediately
   loadAll();
 
