@@ -279,7 +279,14 @@ class MedicalRecordsManager {
         try {
             // Add admin token header if available (TOK defined in admin UI)
             const headers = { 'Content-Type': 'application/json' };
-            try { if (typeof TOK === 'function') headers['X-Admin-Token'] = TOK(); } catch (e) {}
+            
+            // Try to get admin token from cookie
+            const adminToken = document.cookie.match(/dds_admin=([^;]+)/);
+            if (adminToken && adminToken[1]) {
+                headers['X-Admin-Token'] = adminToken[1];
+            } else {
+                console.warn('No admin token found in cookies');
+            }
 
             // Disable Save button while saving
             const saveBtn = document.querySelector('.btn-secondary[onclick="saveProgress()"]');
@@ -302,7 +309,8 @@ class MedicalRecordsManager {
             if (response.ok && showConfirmation) {
                 this.showNotification('Progress saved successfully', 'success');
             } else if (!response.ok) {
-                throw new Error(result.error || 'Failed to save progress');
+                console.error('Save failed:', result);
+                throw new Error(result.error || `Failed to save progress (Status: ${response.status})`);
             }
             if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save Progress'; }
         } catch (error) {
@@ -312,12 +320,20 @@ class MedicalRecordsManager {
             }
             const saveBtn = document.querySelector('.btn-secondary[onclick="saveProgress()"]');
             if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save Progress'; }
+            // Re-throw so caller knows save failed
+            throw error;
+        }
         }
     }
 
     async submitVisit() {
         // First save all current progress
-        await this.saveProgress(false);
+        try {
+            await this.saveProgress(false);
+        } catch (error) {
+            this.showNotification('Failed to save progress before completing visit', 'error');
+            return;
+        }
 
         if (!this.validateForm()) {
             this.showNotification('Please fill in all required fields', 'error');
@@ -325,11 +341,16 @@ class MedicalRecordsManager {
         }
 
         try {
+            // Get admin token from cookie
+            const adminToken = document.cookie.match(/dds_admin=([^;]+)/);
+            const headers = { 'Content-Type': 'application/json' };
+            if (adminToken && adminToken[1]) {
+                headers['X-Admin-Token'] = adminToken[1];
+            }
+
             const response = await fetch(`/api/admin/visits/${this.visitId}/complete`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
+                headers: headers
             });
 
             const result = await response.json();
@@ -340,7 +361,8 @@ class MedicalRecordsManager {
                     window.close();
                 }, 2000);
             } else {
-                throw new Error(result.error || 'Failed to complete visit');
+                console.error('Complete visit failed:', result);
+                throw new Error(result.error || `Failed to complete visit (Status: ${response.status})`);
             }
         } catch (error) {
             console.error('Error completing visit:', error);
