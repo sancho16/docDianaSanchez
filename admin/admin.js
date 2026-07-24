@@ -234,9 +234,12 @@
       const data = await response.json();
       console.log('API data received:', data);
       
-      if (data.ok && data.bookings) {
+      // Handle both response formats
+      const bookings = data.bookings || data.rows || [];
+      
+      if (bookings && Array.isArray(bookings)) {
         // Transform API data to match our local format
-        return data.bookings.map(booking => ({
+        return bookings.map(booking => ({
           id: 'b' + booking.id,
           dbId: booking.id,
           name: booking.name,
@@ -270,7 +273,7 @@
         }));
       }
 
-      console.warn('API response missing ok or bookings field');
+      console.warn('API response has no bookings/rows array');
       return [];
     } catch (err) {
       console.error('Failed to load appointments from API:', err);
