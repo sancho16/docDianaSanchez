@@ -79,6 +79,7 @@ pre, code { font-family: 'Courier New', monospace; }
   background: radial-gradient(ellipse at 60% 40%, rgba(13,148,136,0.1) 0%, transparent 60%), var(--bg);
   padding: 24px;
 }
+.adm-login[hidden] { display: none; }
 .adm-login__card {
   background: var(--bg-card); border: 1px solid var(--border);
   border-radius: 20px; padding: 48px 40px;
