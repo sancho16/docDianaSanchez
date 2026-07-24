@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Login · Admin | Dra. Diana Sánchez</title>
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/templates/admin.css" />
+</head>
+<body>
+
+  <!-- ── LOGIN SCREEN ── -->
+  <div class="adm-login" role="main" aria-label="Inicio de sesión">
+    <div class="adm-login__card">
+      <div class="adm-login__logo" aria-hidden="true">
+        <span class="adm-cross">✚</span>
+      </div>
+      <h1 class="adm-login__title">Panel de administración</h1>
+      <p class="adm-login__sub">Dra. Diana Sánchez · Reseñas</p>
+
+      {% if error %}
+      <div class="adm-error-banner" role="alert">
+        {{ error }}
+      </div>
+      {% endif %}
+
+      <form method="POST" action="/admin/login" novalidate>
+        <div class="adm-field">
+          <label for="adm-pass">Contraseña</label>
+          <div class="adm-field__input-wrap">
+            <input type="password" id="adm-pass" name="password"
+              placeholder="••••••••" autocomplete="current-password"
+              aria-describedby="adm-pass-error" required autofocus />
+            <button type="button" class="adm-toggle-pass" id="toggle-pass"
+              aria-label="Mostrar contraseña" title="Mostrar/ocultar">
+              <svg id="eye-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2"/>
+                <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </button>
+          </div>
+          <span class="adm-error" id="adm-pass-error" role="alert" aria-live="polite"></span>
+        </div>
+        <button type="submit" class="adm-btn adm-btn--primary adm-btn--full">Entrar</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Toggle password visibility
+    const togglePass = document.getElementById('toggle-pass');
+    const passInput = document.getElementById('adm-pass');
+    
+    togglePass?.addEventListener('click', () => {
+      const isPassword = passInput.type === 'password';
+      passInput.type = isPassword ? 'text' : 'password';
+      togglePass.setAttribute('aria-label', isPassword ? 'Ocultar contraseña' : 'Mostrar contraseña');
+    });
+  </script>
+</body>
+</html>
