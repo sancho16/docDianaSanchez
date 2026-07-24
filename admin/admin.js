@@ -7,8 +7,6 @@
   'use strict';
 
   /* ── Config ── */
-  const ADMIN_PASS  = 'diana2024';
-  const SESSION_KEY = 'dds_admin_session';
   const APPT_KEY    = 'dds_appointments';
   const API_URL     = 'https://api.docdianasanchez.com';
   const API_HOST_KEY = 'dds_api_host';
@@ -22,13 +20,7 @@
   let activeTab       = 'pending';
 
   /* ── DOM ── */
-  const loginScreen = document.getElementById('adm-login');
   const appScreen   = document.getElementById('adm-app');
-  const loginForm   = document.getElementById('login-form');
-  const passInput   = document.getElementById('adm-pass');
-  const passError   = document.getElementById('adm-pass-error');
-  const togglePass  = document.getElementById('toggle-pass');
-  const logoutBtn   = document.getElementById('logout-btn');
   const refreshBtn  = document.getElementById('refresh-btn');
   const menuToggle  = document.getElementById('adm-menu-toggle');
   const sidebar     = document.getElementById('adm-sidebar');
@@ -106,55 +98,11 @@
   }
 
   /* ══════════════════════════════════════════════
-     AUTH
+     AUTH (Server-side)
+     Note: Authentication is now handled by the server.
+     This page is only served if user is authenticated.
+     Logout is handled by navigating to /admin/logout
   ══════════════════════════════════════════════ */
-  function isLoggedIn() { return sessionStorage.getItem(SESSION_KEY) === '1'; }
-
-  function showApp() {
-    loginScreen.hidden = true;
-    appScreen.hidden   = false;
-    loadAll();
-  }
-
-  function showLogin() {
-    loginScreen.hidden = false;
-    appScreen.hidden   = true;
-    sessionStorage.removeItem(SESSION_KEY);
-  }
-
-  loginForm.addEventListener('submit', async function (e) {
-    e.preventDefault();
-    if (passInput.value === ADMIN_PASS) {
-      passError.textContent = '';
-      passInput.classList.remove('has-error');
-      sessionStorage.setItem(SESSION_KEY, '1');
-      try {
-        await showApp();
-      } catch (error) {
-        console.error('Error showing app:', error);
-        showToast('Error cargando datos: ' + error.message, 'red');
-        showLogin();
-      }
-    } else {
-      passError.textContent = 'Contraseña incorrecta.';
-      passInput.classList.add('has-error');
-      passInput.focus();
-      passInput.select();
-      passInput.animate([
-        { transform: 'translateX(-6px)' }, { transform: 'translateX(6px)' },
-        { transform: 'translateX(-4px)' }, { transform: 'translateX(4px)' },
-        { transform: 'translateX(0)' }
-      ], { duration: 320, easing: 'ease' });
-    }
-  });
-
-  logoutBtn.addEventListener('click', showLogin);
-
-  togglePass.addEventListener('click', function () {
-    const isText = passInput.type === 'text';
-    passInput.type = isText ? 'password' : 'text';
-    togglePass.setAttribute('aria-label', isText ? 'Mostrar contraseña' : 'Ocultar contraseña');
-  });
 
   /* ══════════════════════════════════════════════
      LOAD ALL DATA
@@ -1105,6 +1053,7 @@
      INIT
   ══════════════════════════════════════════════ */
   loadTheme();
-  if (isLoggedIn()) showApp();
+  // User is already authenticated (server checked), load data immediately
+  loadAll();
 
 })();
