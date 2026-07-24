@@ -1851,28 +1851,16 @@ def admin_update_visit(visit_id):
         conn = _db()
         cur = conn.cursor()
         
-        # Update visit - handle both simple fields and JSON fields
+        # Update visit
         update_fields = []
         params = []
         
-        # Simple text fields
-        simple_fields = ["chief_complaint", "vital_signs", "physical_examination", "diagnosis", 
-                        "treatment_plan", "follow_up_instructions", "next_appointment", 
-                        "visit_status", "doctor_notes"]
-        
-        for field in simple_fields:
+        for field in ["symptoms", "vital_signs", "physical_examination", "diagnosis", 
+                     "treatment_plan", "follow_up_instructions", "next_appointment", 
+                     "visit_status", "doctor_notes", "medications_prescribed"]:
             if field in data:
                 update_fields.append(f"{field} = %s")
                 params.append(data[field])
-        
-        # Handle complex JSON fields (medications and symptoms)
-        if "medications_prescribed" in data:
-            update_fields.append("medications_prescribed = %s")
-            params.append(json.dumps(data["medications_prescribed"]) if data["medications_prescribed"] else None)
-        
-        if "symptoms" in data:
-            update_fields.append("symptoms = %s")
-            params.append(json.dumps(data["symptoms"]) if data["symptoms"] else None)
         
         if update_fields:
             update_fields.append("updated_at = NOW()")
@@ -1880,24 +1868,14 @@ def admin_update_visit(visit_id):
             
             query = f"UPDATE visits SET {', '.join(update_fields)} WHERE id = %s"
             cur.execute(query, params)
-            
-            # Check if any rows were actually updated
-            rows_affected = cur.rowcount
             conn.commit()
-            
-            cur.close()
-            conn.close()
-            
-            return jsonify({"success": True, "rows_updated": rows_affected})
-        else:
-            cur.close()
-            conn.close()
-            return jsonify({"success": True, "message": "No fields to update"})
-            
+        
+        cur.close()
+        conn.close()
+        
+        return jsonify({"success": True})
     except Exception as e:
-        if conn:
-            conn.rollback()
-        return jsonify({"error": str(e), "success": False}), 500
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/api/admin/visits/<int:visit_id>/medications", methods=["POST"])
 def admin_add_medication(visit_id):
