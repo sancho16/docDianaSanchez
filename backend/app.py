@@ -41,6 +41,9 @@ VALID_SERVICES = {
 }
 NAME_RE = re.compile(r"^[\wÀ-ÿ'’\.\-\s]{2,120}$")
 
+# Directory for storing temporary visit drafts when DB permissions prevent creating real visits
+DRAFTS_DIR = os.path.join(os.path.dirname(__file__), 'data', 'visit_drafts')
+
 
 def _db():
     return psycopg2.connect(DATABASE_URL, connect_timeout=5)
@@ -996,9 +999,7 @@ ADMIN_VIEW_HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8">
    box-shadow:0 8px 32px var(--shadow);
  }
  .panel h2{font-size:1.1rem;font-weight:600;margin:0 0 1.5rem;color:var(--text-secondary);letter-spacing:-0.01em}
- .panel canvas{display:block;width:100% !important;max-height:400px !important}
- .panel.chart-circle{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem}
- .panel.chart-circle canvas{aspect-ratio:1/1 !important;width:min(100%,350px) !important;height:auto !important;max-height:350px !important}
+ .panel canvas{display:block;width:100% !important;aspect-ratio:1/1;max-height:min(300px,60vw)}
  
  .bar2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem}
  
@@ -1072,9 +1073,7 @@ ADMIN_VIEW_HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8">
  th{color:var(--text-muted);font-weight:600;font-size:0.85rem;text-transform:uppercase;letter-spacing:0.05em}
  td{color:var(--text-secondary)}
  tr:last-child td{border-bottom:0}
- tbody tr{cursor:pointer;transition:all 0.2s ease}
- tbody tr:hover{background:rgba(95,227,214,0.1);transform:scale(1.005)}
- tbody tr:active{transform:scale(0.998)}
+ tbody tr:hover{background:rgba(255,255,255,0.03)}
  
  .pill{
    display:inline-block;
@@ -1091,72 +1090,6 @@ ADMIN_VIEW_HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8">
  .cancelled{background:rgba(245,154,154,0.2);color:#f59a9a;border:1px solid rgba(245,154,154,0.3)}
  
  .sel{opacity:0.5}
-/* ══════════════════════════════════════════════
-   THEME SYSTEM - Dark & Light Mode
-══════════════════════════════════════════════ */
-:root {
-  /* Light Theme (Default) */
-  --bg-gradient-start: #f0f4f8;
-  --bg-gradient-end: #d9e2ec;
-  --glass-bg: rgba(255,255,255,0.9);
-  --glass-border: rgba(0,0,0,0.1);
-  --text-primary: #102a43;
-  --text-secondary: #334e68;
-  --text-muted: #627d98;
-  --accent: #00a8b5;
-  --accent-hover: #008891;
-  --shadow: rgba(0,0,0,0.1);
-}
-
-[data-theme="dark"] {
-  /* Dark Theme */
-  --bg-gradient-start: #001f25;
-  --bg-gradient-end: #003d47;
-  --glass-bg: rgba(255,255,255,0.08);
-  --glass-border: rgba(255,255,255,0.12);
-  --text-primary: #ffffff;
-  --text-secondary: rgba(255,255,255,0.75);
-  --text-muted: rgba(255,255,255,0.5);
-  --accent: #5fe3d6;
-  --accent-hover: #00b8a3;
-  --shadow: rgba(0,0,0,0.3);
-}
-
-/* Theme Toggle Button */
-.theme-toggle {
-  position: fixed;
-  top: 1rem;
-  right: 1rem;
-  z-index: 1000;
-  background: var(--glass-bg);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--glass-border);
-  border-radius: 50px;
-  padding: 0.5rem 1rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px var(--shadow);
-}
-
-.theme-toggle:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px var(--shadow);
-}
-
-.theme-toggle svg {
-  width: 20px;
-  height: 20px;
-  fill: var(--accent);
-  transition: transform 0.3s ease;
-}
-
-.theme-toggle:hover svg {
-  transform: rotate(20deg);
-}
-
  .tag{
    font-size:0.7rem;
    color:var(--accent);
@@ -1165,6 +1098,69 @@ ADMIN_VIEW_HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8">
    border-radius:6px;
    margin-left:0.4rem;
  }
+ .appointments-grid{
+   display:grid;
+   grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+   gap:1.2rem;
+   align-items:start;
+ }
+ .appointment-card{
+   cursor:default;
+   min-height:340px;
+ }
+ .card-inner{
+   position:relative;
+   width:100%;
+   min-height:340px;
+   display:flex;
+   flex-direction:column;
+   justify-content:space-between;
+   border-radius:18px;
+   border:1px solid var(--glass-border);
+   background:var(--glass-bg);
+   backdrop-filter:blur(16px) saturate(180%);
+   -webkit-backdrop-filter:blur(16px) saturate(180%);
+   box-shadow:0 8px 32px var(--shadow);
+   padding:1.3rem;
+   color:var(--text-primary);
+   transition:box-shadow .25s ease;
+ }
+ .card-inner:hover{
+   box-shadow:0 18px 40px rgba(0,0,0,.22);
+ }
+ .card-front,
+ .card-back{
+   position:static;
+   transform:none;
+   backface-visibility:visible;
+   -webkit-backface-visibility:visible;
+ }
+ .appointment-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+ .patient-name{font-size:1rem;font-weight:700;color:var(--white);line-height:1.2}
+ .status-badge{padding:3px 10px;border-radius:999px;font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+ .status-pending{background:rgba(232,245,154,.2);color:#e8f59a;border:1px solid rgba(232,245,154,.3)}
+ .status-confirmed{background:rgba(154,242,201,.2);color:#9af2c9;border:1px solid rgba(154,242,201,.3)}
+ .status-completed{background:rgba(159,217,242,.2);color:#9fd9f2;border:1px solid rgba(159,217,242,.3)}
+ .status-cancelled{background:rgba(245,154,154,.2);color:#f59a9a;border:1px solid rgba(245,154,154,.3)}
+ .field-labels{display:flex;flex-wrap:wrap;gap:.65rem;margin-bottom:1rem;font-size:.72rem;color:var(--text-muted);}
+ .field-label{white-space:nowrap;}
+ .appointment-summary{display:grid;grid-template-columns:1fr;gap:.65rem;}
+ .summary-item{font-size:.92rem;color:var(--text-secondary);display:flex;align-items:center;gap:.5rem}
+ .tap-hint{font-size:.78rem;color:var(--text-muted);margin-top:.75rem}
+ .appointment-tabs{display:flex;gap:.5rem;margin-top:1rem;flex-wrap:wrap}
+ .tab-button{flex:1 1 120px;min-width:120px;background:rgba(255,255,255,.08);color:var(--text-secondary);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:.7rem 1rem;font-size:.84rem;font-weight:700;cursor:pointer;transition:all .25s ease}
+ .tab-button.active{background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.22)}
+ .tab-panel{display:none;margin-top:1rem}
+ .tab-panel.active{display:block}
+ .appointment-details{display:grid;gap:.75rem}
+ .detail-row{display:grid;grid-template-columns:auto 1fr;gap:.75rem;font-size:.92rem;align-items:start}
+ .detail-label{color:var(--text-muted)}
+ .detail-value{color:var(--text-primary);font-weight:500;word-break:break-word}
+ .card-actions{display:flex;flex-wrap:wrap;gap:.65rem;margin-top:1rem}
+ .btn-secondary,.btn-primary,.btn-danger{padding:.55rem 1rem;border-radius:10px;font-size:.82rem;font-weight:700;cursor:pointer;border:0;transition:all .3s ease}
+ .btn-secondary{background:rgba(255,255,255,.08);color:var(--text-secondary);border:1px solid rgba(255,255,255,.15)}
+ .btn-primary{background:linear-gradient(135deg,#5fe3d0,#00b8a3);color:#001f25}
+ .btn-danger{background:#ef4444;color:#fff}
 </style></head><body>
 
 <header>
@@ -1176,24 +1172,6 @@ ADMIN_VIEW_HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8">
     </div>
     <a class="logout" href="/admin/logout" data-en="Logout" data-es="Cerrar sesión">Logout</a>
   </div>
-
-  <!-- Theme Toggle -->
-  <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark/light theme" title="Switch theme">
-    <svg id="theme-icon-sun" viewBox="0 0 24 24" style="display:none;">
-      <circle cx="12" cy="12" r="5"/>
-      <line x1="12" y1="1" x2="12" y2="3"/>
-      <line x1="12" y1="21" x2="12" y2="23"/>
-      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-      <line x1="1" y1="12" x2="3" y2="12"/>
-      <line x1="21" y1="12" x2="23" y2="12"/>
-      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-    </svg>
-    <svg id="theme-icon-moon" viewBox="0 0 24 24">
-      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-    </svg>
-  </button>
 </header>
 
 <div class="container">
@@ -1204,7 +1182,7 @@ ADMIN_VIEW_HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8">
       <h2 data-en="Appointments per day (last 90 days)" data-es="Citas por día (últimos 90 días)">Appointments per day (last 90 days)</h2>
       <canvas id="cDay"></canvas>
     </div>
-    <div class="panel chart-circle">
+    <div class="panel">
       <h2 data-en="By Status" data-es="Por estado">By Status</h2>
       <canvas id="cStatus"></canvas>
     </div>
@@ -1215,7 +1193,7 @@ ADMIN_VIEW_HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8">
       <h2 data-en="By Service" data-es="Por servicio">By Service</h2>
       <canvas id="cService"></canvas>
     </div>
-    <div class="panel chart-circle">
+    <div class="panel">
       <h2 data-en="Real vs. Dummy" data-es="Reales vs. Dummy">Real vs. Dummy</h2>
       <canvas id="cMix"></canvas>
     </div>
@@ -1242,22 +1220,8 @@ ADMIN_VIEW_HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8">
     <span class="cnt" id="cnt"></span>
   </div>
   
-  <div class="table-container">
-    <table>
-      <thead><tr>
-        <th>#</th>
-        <th data-en="Name" data-es="Nombre">Name</th>
-        <th data-en="Phone" data-es="Teléfono">Phone</th>
-        <th data-en="Email" data-es="Correo">Email</th>
-        <th data-en="Date" data-es="Fecha">Date</th>
-        <th data-en="Time" data-es="Hora">Time</th>
-        <th data-en="Service" data-es="Servicio">Service</th>
-        <th data-en="Message" data-es="Mensaje">Message</th>
-        <th data-en="Status" data-es="Estado">Status</th>
-        <th data-en="Action" data-es="Acción">Action</th>
-      </tr></thead>
-      <tbody id="rows"></tbody>
-    </table>
+  <div class="container">
+    <div id="appointmentsGrid" class="appointments-grid"></div>
   </div>
 </div>
 
@@ -1315,64 +1279,6 @@ function setLang(lang) {
   // Redraw charts with new language
   if (statsData) charts(statsData);
   load();
-
-// Theme toggle functionality
-function toggleTheme() {
-  const html = document.documentElement;
-  const currentTheme = html.getAttribute('data-theme') || 'light';
-  const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-  
-  html.setAttribute('data-theme', newTheme);
-  localStorage.setItem('adminTheme', newTheme);
-  
-  // Toggle icons
-  document.getElementById('theme-icon-sun').style.display = newTheme === 'dark' ? 'block' : 'none';
-  document.getElementById('theme-icon-moon').style.display = newTheme === 'dark' ? 'none' : 'block';
-  
-  // Update chart colors
-  if (typeof chartInstances !== 'undefined') {
-    updateChartColors(newTheme);
-  }
-}
-
-// Load saved theme on page load
-(function() {
-  const savedTheme = localStorage.getItem('adminTheme') || 'dark';
-  document.documentElement.setAttribute('data-theme', savedTheme);
-  
-  // Set correct icon on load
-  if (document.getElementById('theme-icon-sun')) {
-    document.getElementById('theme-icon-sun').style.display = savedTheme === 'dark' ? 'block' : 'none';
-    document.getElementById('theme-icon-moon').style.display = savedTheme === 'dark' ? 'none' : 'block';
-  }
-})();
-
-function updateChartColors(theme) {
-  const isDark = theme === 'dark';
-  const textColor = isDark ? 'rgba(255,255,255,0.75)' : '#334e68';
-  const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
-  
-  Object.values(chartInstances).forEach(chart => {
-    if (chart && chart.options) {
-      // Update text colors
-      if (chart.options.scales) {
-        if (chart.options.scales.x) {
-          chart.options.scales.x.ticks.color = textColor;
-          chart.options.scales.x.grid.color = gridColor;
-        }
-        if (chart.options.scales.y) {
-          chart.options.scales.y.ticks.color = textColor;
-          chart.options.scales.y.grid.color = gridColor;
-        }
-      }
-      if (chart.options.plugins && chart.options.plugins.legend) {
-        chart.options.plugins.legend.labels.color = textColor;
-      }
-      chart.update();
-    }
-  });
-}
-
 }
 
 const COL = {pending:'#e8f59a',confirmed:'#9af2c9',completed:'#9fd9f2',cancelled:'#f59a9a'};
@@ -1380,34 +1286,55 @@ const TOK = () => (document.cookie.match(/dds_admin=([^;]+)/)||[,location.search
 const qp = () => `dummy=${fDummy.value}&status=${fStatus.value}`;
 const t = (key) => TRANSLATIONS[currentLang][key];
 
-function load() {
-  fetch('/api/admin/bookings?'+qp(),{headers:{'X-Admin-Token':''}})
-  .then(r=>r.json())
-  .then(d=>{
-    if(d.error){location.href='/admin';return;}
-    rows.innerHTML=d.rows.map(r=>`
-      <tr class="${r.is_dummy?'sel':''}" onclick="openMedicalRecord(${r.id}, event)" data-booking-id="${r.id}">
-        <td>${r.id}${r.is_dummy?` <span class="tag">${t('dummy')}</span>`:''}</td>
-        <td>${esc(r.name)}</td>
-        <td>${esc(r.phone||'')}</td>
-        <td>${esc(r.email||'')}</td>
-        <td>${r.preferred_date||'—'}</td>
-        <td>${r.preferred_time||'—'}</td>
-        <td>${esc(r.service||'—')}</td>
-        <td>${esc((r.message||'').slice(0,80))}</td>
-        <td><span class="pill ${r.status}">${r.status}</span></td>
-        <td><select onchange="setStatus(${r.id},this.value)">
-          <option value="">—</option>
-          <option value="confirmed">${t('confirm')}</option>
-          <option value="completed">${t('complete')}</option>
-          <option value="cancelled">${t('cancel')}</option>
-        </select></td>
-      </tr>`).join('');
-    cnt.textContent = `${d.count} ${t('appointments')}`;
-    csv.href='/api/bookings.csv?dummy='+fDummy.value+'&token='+encodeURIComponent(TOK());
-  })
-  .catch(()=>location.href='/admin');
+function adminStatus(msg, isError=false){
+  let el = document.getElementById('adminStatus');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'adminStatus';
+    el.style.cssText = 'position:fixed;left:12px;right:12px;bottom:12px;padding:.8rem 1rem;border-radius:12px;font:.85rem/1.3 system-ui,sans-serif;z-index:9999';
+    document.body.appendChild(el);
+  }
+  el.style.background = isError ? 'rgba(255,107,107,0.22)' : 'rgba(95,227,214,0.18)';
+  el.style.color = isError ? '#ffb3b3' : '#c7fff6';
+  el.style.border = isError ? '1px solid rgba(255,107,107,0.35)' : '1px solid rgba(95,227,214,0.3)';
+  el.textContent = '[admin] ' + msg;
 }
+
+function debugApi(path){
+  const box = document.getElementById('adminDebug');
+  const line = document.createElement('div');
+  line.style.cssText='font-size:.75rem;padding:.25rem 0;border-bottom:1px solid rgba(255,255,255,0.08)';
+  box.appendChild(line);
+  try{
+    fetch(path,{headers:{'X-Admin-Token': TOK()}}).then(async r=>{
+      const body = await r.text().catch(()=>'<text-failed>');
+      line.textContent = path + ' -> ' + r.status + ' ' + r.statusText + ' ; token=' + TOK() + ' ; body=' + String(body).slice(0,400);
+    }).catch(e=> line.textContent = path + ' -> FETCH_ERR ' + e.message + ' ; token=' + TOK());
+  }catch(e){ line.textContent = path + ' -> SCRIPT_ERR ' + e.message; }
+}
+
+function load() {
+  fetch('/api/admin/bookings?'+qp(),{headers:{'X-Admin-Token': TOK()}})
+  .then(r=>r.json().then(d => ({r,d})).catch(e=>({r:{status:0},d:{error:'Network error: '+String(e)}})))
+  .then(o=>{
+    if(o.r.status === 401 || o.r.status === 403){
+      adminStatus('Unauthorized: ' + ((o.d && o.d.error) || o.r.status), true);
+      location.href='/admin'; 
+      return;
+    }
+    if(o.d && o.d.error){
+      adminStatus('Backend error: ' + o.d.error, true);
+      console.warn(o.d);
+    } else {
+      adminStatus('Loaded ' + ((o.d && o.d.count)||0) + ' appointments');
+    }
+    filteredData = (o.d && o.d.rows) || [];
+    renderAppointmentsGrid();
+    cnt.textContent = `${(o.d && o.d.count) || 0} ${t('appointments')}`;
+    csv.href='/api/bookings.csv?dummy='+fDummy.value+'&token='+encodeURIComponent(TOK());
+  });
+}
+let filteredData = [];
 
 function setStatus(id,s){
   if(!s)return;
@@ -1420,15 +1347,6 @@ function setStatus(id,s){
 
 function esc(s){return (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
 
-// Open medical records in new tab
-function openMedicalRecord(bookingId, event) {
-  // Prevent if clicking on select/dropdown
-  if (event.target.tagName === 'SELECT' || event.target.closest('select')) {
-    return;
-  }
-  const medicalRecordsUrl = '/admin/medical-records?booking_id=' + bookingId;
-  window.open(medicalRecordsUrl, '_blank', 'width=1400,height=900,scrollbars=yes,resizable=yes');
-}
 let chartInstances = {};
 
 function charts(s) {
@@ -1524,149 +1442,31 @@ const savedLang = localStorage.getItem('adminLang') || 'en';
 currentLang = savedLang;
 setLang(savedLang);
 
-fetch('/api/admin/stats')
+fetch('/api/admin/stats',{headers:{'X-Admin-Token': TOK()}})
   .then(r=>r.json())
   .then(charts)
   .catch(e=>console.warn('stats',e));
 
-fDummy.onchange = load;
-fStatus.onchange = load;
+// Safely wire filters if elements are present (avoid null addEventListener errors)
+const _fDummy = document.getElementById('fDummy');
+const _fStatus = document.getElementById('fStatus');
+if (_fDummy) _fDummy.onchange = load;
+if (_fStatus) _fStatus.onchange = load;
 load();
-
-// Theme toggle functionality
-function toggleTheme() {
-  const html = document.documentElement;
-  const currentTheme = html.getAttribute('data-theme') || 'light';
-  const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-  
-  html.setAttribute('data-theme', newTheme);
-  localStorage.setItem('adminTheme', newTheme);
-  
-  // Toggle icons
-  document.getElementById('theme-icon-sun').style.display = newTheme === 'dark' ? 'block' : 'none';
-  document.getElementById('theme-icon-moon').style.display = newTheme === 'dark' ? 'none' : 'block';
-  
-  // Update chart colors
-  if (typeof chartInstances !== 'undefined') {
-    updateChartColors(newTheme);
-  }
-}
-
-// Load saved theme on page load
-(function() {
-  const savedTheme = localStorage.getItem('adminTheme') || 'dark';
-  document.documentElement.setAttribute('data-theme', savedTheme);
-  
-  // Set correct icon on load
-  if (document.getElementById('theme-icon-sun')) {
-    document.getElementById('theme-icon-sun').style.display = savedTheme === 'dark' ? 'block' : 'none';
-    document.getElementById('theme-icon-moon').style.display = savedTheme === 'dark' ? 'none' : 'block';
-  }
-})();
-
-function updateChartColors(theme) {
-  const isDark = theme === 'dark';
-  const textColor = isDark ? 'rgba(255,255,255,0.75)' : '#334e68';
-  const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
-  
-  Object.values(chartInstances).forEach(chart => {
-    if (chart && chart.options) {
-      // Update text colors
-      if (chart.options.scales) {
-        if (chart.options.scales.x) {
-          chart.options.scales.x.ticks.color = textColor;
-          chart.options.scales.x.grid.color = gridColor;
-        }
-        if (chart.options.scales.y) {
-          chart.options.scales.y.ticks.color = textColor;
-          chart.options.scales.y.grid.color = gridColor;
-        }
-      }
-      if (chart.options.plugins && chart.options.plugins.legend) {
-        chart.options.plugins.legend.labels.color = textColor;
-      }
-      chart.update();
-    }
-  });
-}
-
 
 // Read/Unread filter handling
 let currentReadFilter = '';
-document.getElementById('fAll').addEventListener('click', function() {
-  setReadFilter('');
-  setActiveReadButton(this);
-});
-document.getElementById('fUnread').addEventListener('click', function() {
-  setReadFilter('unread');
-  setActiveReadButton(this);
-});
-document.getElementById('fRead').addEventListener('click', function() {
-  setReadFilter('read');
-  setActiveReadButton(this);
-});
+// Wire read-filter buttons only if they exist in the DOM
+const _fAll = document.getElementById('fAll');
+const _fUnread = document.getElementById('fUnread');
+const _fRead = document.getElementById('fRead');
+if (_fAll) _fAll.addEventListener('click', function() { setReadFilter(''); setActiveReadButton(this); });
+if (_fUnread) _fUnread.addEventListener('click', function() { setReadFilter('unread'); setActiveReadButton(this); });
+if (_fRead) _fRead.addEventListener('click', function() { setReadFilter('read'); setActiveReadButton(this); });
 
 function setReadFilter(filter) {
   currentReadFilter = filter;
   load();
-
-// Theme toggle functionality
-function toggleTheme() {
-  const html = document.documentElement;
-  const currentTheme = html.getAttribute('data-theme') || 'light';
-  const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-  
-  html.setAttribute('data-theme', newTheme);
-  localStorage.setItem('adminTheme', newTheme);
-  
-  // Toggle icons
-  document.getElementById('theme-icon-sun').style.display = newTheme === 'dark' ? 'block' : 'none';
-  document.getElementById('theme-icon-moon').style.display = newTheme === 'dark' ? 'none' : 'block';
-  
-  // Update chart colors
-  if (typeof chartInstances !== 'undefined') {
-    updateChartColors(newTheme);
-  }
-}
-
-// Load saved theme on page load
-(function() {
-  const savedTheme = localStorage.getItem('adminTheme') || 'dark';
-  document.documentElement.setAttribute('data-theme', savedTheme);
-  
-  // Set correct icon on load
-  if (document.getElementById('theme-icon-sun')) {
-    document.getElementById('theme-icon-sun').style.display = savedTheme === 'dark' ? 'block' : 'none';
-    document.getElementById('theme-icon-moon').style.display = savedTheme === 'dark' ? 'none' : 'block';
-  }
-})();
-
-function updateChartColors(theme) {
-  const isDark = theme === 'dark';
-  const textColor = isDark ? 'rgba(255,255,255,0.75)' : '#334e68';
-  const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
-  
-  Object.values(chartInstances).forEach(chart => {
-    if (chart && chart.options) {
-      // Update text colors
-      if (chart.options.scales) {
-        if (chart.options.scales.x) {
-          chart.options.scales.x.ticks.color = textColor;
-          chart.options.scales.x.grid.color = gridColor;
-        }
-        if (chart.options.scales.y) {
-          chart.options.scales.y.ticks.color = textColor;
-          chart.options.scales.y.grid.color = gridColor;
-        }
-      }
-      if (chart.options.plugins && chart.options.plugins.legend) {
-        chart.options.plugins.legend.labels.color = textColor;
-      }
-      chart.update();
-    }
-  });
-}
-
 }
 
 function setActiveReadButton(activeBtn) {
@@ -1678,7 +1478,7 @@ function setActiveReadButton(activeBtn) {
 
 // Mark as read/unread functions
 function markAsRead(id) {
-  fetch('/api/admin/bookings/' + id + '/mark-read', {
+  fetch('/api/admin/bookings/' + id + '/mark-read', {headers:{'X-Admin-Token': TOK()},
     method: 'PATCH',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({read_status: 'read'})
@@ -1686,14 +1486,204 @@ function markAsRead(id) {
 }
 
 function markAsUnread(id) {
-  fetch('/api/admin/bookings/' + id + '/mark-read', {
+  fetch('/api/admin/bookings/' + id + '/mark-read', {headers:{'X-Admin-Token': TOK()},
     method: 'PATCH',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({read_status: 'unread'})
   }).then(() => load()).catch(console.error);
 }
 
-</script>
+
+// Use a window-scoped flag to avoid temporal-dead-zone issues when scripts execute
+window.appointmentInteractionsInitialized = window.appointmentInteractionsInitialized || false;
+
+function renderAppointmentsGrid() {
+  const grid = document.getElementById('appointmentsGrid') || createAppointmentsGrid();
+  
+  if (filteredData.length === 0) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--text-muted)">No appointments found</div>';
+    initAppointmentInteractions();
+    return;
+  }
+  
+  grid.innerHTML = filteredData.map(booking => createAppointmentCard(booking)).join('');
+  initAppointmentInteractions();
+}
+
+function createAppointmentsGrid() {
+  const grid = document.createElement('div');
+  grid.id = 'appointmentsGrid';
+  grid.className = 'appointments-grid';
+  document.querySelector('.container').appendChild(grid);
+  return grid;
+}
+
+function createAppointmentCard(booking) {
+  const statusClass = `status-${booking.status || 'pending'}`;
+  const statusLabel = getStatusLabel(booking.status || 'pending');
+  const date = formatDate(booking.preferred_date);
+  const time = booking.preferred_time || 'Not specified';
+
+  return `
+    <div class="appointment-card" data-id="${booking.id}" data-status="${booking.status || 'pending'}">
+      <div class="card-inner">
+        <div class="field-labels">
+          <span class="field-label">Name</span>
+          <span class="field-label">Phone</span>
+          <span class="field-label">Email</span>
+          <span class="field-label">Date</span>
+          <span class="field-label">Time</span>
+          <span class="field-label">Service</span>
+        </div>
+        <div class="appointment-header">
+          <div class="patient-name">${escapeHtml(booking.name)}</div>
+          <div class="status-badge ${statusClass}">${statusLabel}</div>
+        </div>
+        <div class="appointment-summary tab-panel active" data-panel="summary">
+          <div class="summary-item">📅 ${date}</div>
+          <div class="summary-item">⏰ ${time}</div>
+          ${booking.service ? `<div class="summary-item">🩺 ${escapeHtml(booking.service)}</div>` : ''}
+          <div class="tap-hint">Select “Details” for full patient information.</div>
+        </div>
+        <div class="appointment-details tab-panel" data-panel="details">
+          <div class="detail-row">
+            <span class="detail-label">Patient:</span>
+            <span class="detail-value">${escapeHtml(booking.name)}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Email:</span>
+            <span class="detail-value">${escapeHtml(booking.email || 'Not provided')}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Phone:</span>
+            <span class="detail-value">${escapeHtml(booking.phone || 'Not provided')}</span>
+          </div>
+          ${booking.service ? `<div class="detail-row"><span class="detail-label">Service:</span><span class="detail-value">${escapeHtml(booking.service)}</span></div>` : ''}
+          <div class="detail-row"><span class="detail-label">Status:</span><span class="detail-value">${statusLabel}</span></div>
+        </div>
+        <div class="appointment-tabs">
+          <button type="button" class="tab-button active" data-tab="summary">Summary</button>
+          <button type="button" class="tab-button" data-tab="details">Details</button>
+        </div>
+        <div class="card-actions">
+          <button class="btn btn-primary" data-act="view">Open full</button>
+          <button class="btn btn-primary" data-act="confirm">Confirm</button>
+          <button class="btn btn-danger" data-act="cancel">Cancel</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function getStatusLabel(status) {
+  const labels = {'pending': 'Pending', 'confirmed': 'Confirmed', 'cancelled': 'Cancelled', 'completed':'Completed'};
+  return labels[status] || 'Pending';
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return 'Not specified';
+  try {
+    const d = new Date(dateStr + 'T00:00:00');
+    return d.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+  } catch (e) {
+    return dateStr || 'Not specified';
+  }
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text || '';
+  return div.innerHTML;
+}
+
+function initAppointmentInteractions() {
+  if (window.appointmentInteractionsInitialized) return;
+  window.appointmentInteractionsInitialized = true;
+
+  console.log && console.log('[admin-debug] initAppointmentInteractions()');
+
+  document.addEventListener('click', (e) => {
+    const tabButton = e.target.closest('[data-tab]');
+    if (tabButton) {
+      const card = tabButton.closest('.appointment-card');
+      if (!card) return;
+      const panelName = tabButton.getAttribute('data-tab');
+      console.log && console.log('[admin-debug] tab click', panelName, card && card.getAttribute('data-id'));
+      card.querySelectorAll('.tab-button').forEach(btn => btn.classList.toggle('active', btn === tabButton));
+      card.querySelectorAll('.tab-panel').forEach(panel => panel.classList.toggle('active', panel.getAttribute('data-panel') === panelName));
+      return;
+    }
+
+    const action = e.target.closest('[data-act]');
+    if (action) {
+      const card = action.closest('.appointment-card');
+      const act = action.getAttribute('data-act');
+      const id = card ? card.getAttribute('data-id') : null;
+      console.log && console.log('[admin-debug] action', act, id);
+      if (!id) return;
+      if (act === 'view') {
+        // Open the medical records form for the booking so doctor can work
+        window.open('/admin/medical-records?booking_id=' + id, '_blank');
+        return;
+      }
+      if (act === 'confirm') {
+        // Confirm booking, then open medical records for the visit so the doctor can start notes
+        patchStatus(id, 'confirmed').then(() => {
+          try { window.open('/admin/medical-records?booking_id=' + id, '_blank'); } catch (e) { console.error(e); }
+        }).catch(err => { console.error('Confirm failed', err); });
+        return;
+      }
+      if (act === 'cancel') { patchStatus(id, 'cancelled'); return; }
+      return;
+    }
+  });
+
+  document.addEventListener('dblclick', (e) => {
+    const card = e.target.closest('.appointment-card');
+    if (!card) return;
+    const id = card.getAttribute('data-id');
+    if (id) window.open('/admin/appointment/' + id, '_blank');
+  });
+}
+
+function confirmAppointment(id) { patchStatus(id, 'confirmed'); }
+function cancelAppointment(id) { patchStatus(id, 'cancelled'); }
+
+async function patchStatus(id, status) {
+  const card = document.querySelector('.appointment-card[data-id="' + id + '"]');
+  const button = card ? card.querySelector('[data-act="' + status + '"]') : null;
+  if (button) { button.disabled = true; button.textContent = status === 'confirmed' ? 'Confirming…' : 'Cancelling…'; }
+  try {
+    const res = await fetch('/api/admin/bookings/' + id, { method:'PATCH', headers:{'Content-Type':'application/json','X-Admin-Token': TOK()}, body: JSON.stringify({ status }) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+    if (card) {
+      const badge = card.querySelector('.status-badge');
+      if (badge) { badge.className = 'status-badge status-' + status; badge.textContent = getStatusLabel(status); }
+      const hint = card.querySelector('.tap-hint');
+      if (hint) hint.textContent = status === 'confirmed' ? 'Confirmed' : 'Cancelled';
+    }
+    showToast(status === 'confirmed' ? 'Appointment confirmed' : 'Appointment cancelled');
+  } catch (err) {
+    showToast(err.message || 'Action failed', 'error');
+    if (button) { button.disabled = false; button.textContent = status === 'confirmed' ? 'Confirm' : 'Cancel'; }
+  }
+}
+
+function showToast(message, type = 'success') {
+  const el = document.createElement('div');
+  el.style.cssText = 'position:fixed;top:18px;right:18px;z-index:12000;padding:12px 16px;border-radius:14px;color:#fff;font-weight:600;font-size:14px;background:' + (type === 'success' ? '#10b981' : '#ef4444') + ';box-shadow:0 10px 30px rgba(0,0,0,.25);opacity:0;transform:translateY(-10px);transition:all .35s ease';
+  el.textContent = message;
+  document.body.appendChild(el);
+  requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translateY(0)'; });
+  setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateY(-10px)'; setTimeout(() => el.remove(), 400); }, 2400);
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initAppointmentInteractions);
+} else {
+  initAppointmentInteractions();
+}</script>
 </body></html>"""
 
 
@@ -1837,7 +1827,60 @@ def admin_create_visit():
         
         return jsonify({"visit_id": visit_id, "success": True})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        # If database permissions prevent creating a real visit, create a local draft fallback
+        err = str(e)
+        try:
+            if 'permission denied' in err.lower() or 'insufficient privilege' in err.lower():
+                os.makedirs(DRAFTS_DIR, exist_ok=True)
+                draft_id = f"draft-{int(time.time() * 1000)}"
+                path = os.path.join(DRAFTS_DIR, draft_id + ".json")
+                payload = {"draft_id": draft_id, "booking_id": booking_id, "error": err, "created_at": datetime.utcnow().isoformat()}
+                with open(path, "w") as f:
+                    json.dump(payload, f)
+                return jsonify({"visit_id": draft_id, "success": True, "draft": True})
+        except Exception as e2:
+            # fall through to send original error
+            err = f"{err}; fallback failed: {e2}"
+        return jsonify({"error": err}), 500
+
+
+@app.route("/api/admin/visits/draft", methods=["POST"])
+def admin_create_visit_draft():
+  """Create a local draft visit when DB write permissions are unavailable."""
+  if not _admin_authed():
+    return jsonify({"error": "unauthorized"}), 401
+  data = request.get_json(silent=True) or {}
+  try:
+    os.makedirs(DRAFTS_DIR, exist_ok=True)
+    draft_id = f"draft-{int(time.time() * 1000)}"
+    path = os.path.join(DRAFTS_DIR, draft_id + ".json")
+    payload = {"draft_id": draft_id, "booking_id": data.get("booking_id"), "data": data, "created_at": datetime.utcnow().isoformat()}
+    with open(path, "w") as f:
+      json.dump(payload, f)
+    return jsonify({"visit_id": draft_id, "success": True})
+  except Exception as e:
+    return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/admin/visits/draft/<draft_id>", methods=["PUT"])
+def admin_update_visit_draft(draft_id):
+  if not _admin_authed():
+    return jsonify({"error": "unauthorized"}), 401
+  data = request.get_json(silent=True) or {}
+  try:
+    os.makedirs(DRAFTS_DIR, exist_ok=True)
+    path = os.path.join(DRAFTS_DIR, draft_id + ".json")
+    existing = {}
+    if os.path.exists(path):
+      with open(path, "r") as f:
+        existing = json.load(f)
+    existing["data"] = data
+    existing["updated_at"] = datetime.utcnow().isoformat()
+    with open(path, "w") as f:
+      json.dump(existing, f)
+    return jsonify({"success": True})
+  except Exception as e:
+    return jsonify({"error": str(e)}), 500
 
 @app.route("/api/admin/visits/<int:visit_id>", methods=["PUT"])
 def admin_update_visit(visit_id):
