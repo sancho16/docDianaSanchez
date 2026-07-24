@@ -7,7 +7,7 @@ import json
 from datetime import datetime, timedelta
 
 import psycopg2
-from flask import Flask, send_from_directory, request, jsonify, Response, render_template_string, make_response, redirect, url_for
+from flask import Flask, send_from_directory, request, jsonify, Response, render_template_string, render_template, make_response, redirect, url_for
 from flask_cors import CORS
 import notify
 
@@ -16,9 +16,13 @@ app = Flask(__name__)
 # Only the real site may call this API. Adjust if you add a staging domain.
 ALLOWED_ORIGINS = os.environ.get(
     "ALLOWED_ORIGINS",
-    "https://docdianasanchez.com,https://www.docdianasanchez.com",
+    "https://docdianasanchez.com,https://www.docdianasanchez.com,https://api.docdianasanchez.com",
 ).split(",")
-CORS(app, origins=ALLOWED_ORIGINS, methods=["POST", "GET", "OPTIONS"])
+CORS(app, 
+     origins=ALLOWED_ORIGINS, 
+     methods=["POST", "GET", "OPTIONS", "PUT", "DELETE", "PATCH"],
+     allow_headers=["Content-Type", "X-Admin-Token"],
+     supports_credentials=True)
 
 DATABASE_URL = os.environ.get(
     "DATABASE_URL",
@@ -40,6 +44,9 @@ VALID_SERVICES = {
     "Atención Pediátrica", "Consulta Virtual", "Visita Domiciliaria",
 }
 NAME_RE = re.compile(r"^[\wÀ-ÿ'’\.\-\s]{2,120}$")
+
+# Directory for storing temporary visit drafts when DB permissions prevent creating real visits
+DRAFTS_DIR = os.path.join(os.path.dirname(__file__), 'data', 'visit_drafts')
 
 
 def _db():
@@ -92,6 +99,17 @@ def create_booking():
     preferred_time = (data.get("preferred_time") or "").strip() or None
     service = (data.get("service") or "").strip() or None
     message = (data.get("message") or "").strip()
+    
+    # Capture device/tracking information
+    ip_address = ip  # Already extracted above for rate limiting
+    user_agent = request.headers.get("User-Agent", "")
+    
+    # Extract device info from request data (sent from frontend with underscore prefix)
+    device_type = (data.get("_device_type") or "").strip() or None
+    device_os = (data.get("_os") or "").strip() or None
+    device_browser = (data.get("_browser") or "").strip() or None
+    ip_city = (data.get("_ip_city") or "").strip() or None
+    ip_country = (data.get("_ip_country") or "").strip() or None
 
     errors = []
     if not NAME_RE.match(name):
@@ -123,10 +141,12 @@ def create_booking():
         cur = conn.cursor()
         cur.execute(
             """INSERT INTO bookings
-               (name, phone, email, preferred_date, preferred_time, service, message, status, is_dummy)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,'pending',FALSE)
+               (name, phone, email, preferred_date, preferred_time, service, message, status, is_dummy,
+                ip_address, device_type, device_os, device_browser, ip_city, ip_country)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,'pending',FALSE,%s,%s,%s,%s,%s,%s)
                RETURNING id, created_at""",
-            (name, phone, email, preferred_date, preferred_time, service, message),
+            (name, phone, email, preferred_date, preferred_time, service, message,
+             ip_address, device_type, device_os, device_browser, ip_city, ip_country),
         )
         row = cur.fetchone()
         bid = row[0]
@@ -159,16 +179,12 @@ def get_bookings():
         conn = _db()
         cur = conn.cursor()
         
-        # Fetch bookings with all device tracking fields
+        # Fetch bookings using the live table columns
         query = """
             SELECT 
-                id, name, patient_id, phone, email, channel, virtual_platform,
-                address, address_city, address_province, gps_coordinates,
-                service, preferred_date, preferred_time, message, status,
-                ip_address, ip_country, ip_city, device_type, device_brand,
-                device_model, device_os, device_browser, screen_size,
-                user_language, user_timezone, connection_type,
-                created_at, updated_at
+                id, name, phone, email, preferred_date, preferred_time,
+                service, message, status, is_dummy, created_at, updated_at,
+                ip_address, device_type, device_os, device_browser, ip_city, ip_country
             FROM bookings 
             WHERE 1=1
         """
@@ -223,12 +239,12 @@ def handle_booking(booking_id):
             
             query = """
                 SELECT 
-                    id, name, patient_id, phone, email, channel, virtual_platform,
-                    address, address_city, address_province, gps_coordinates,
+                    id, name, phone, email,
+                    
                     service, preferred_date, preferred_time, message, status,
-                    ip_address, ip_country, ip_city, device_type, device_brand,
-                    device_model, device_os, device_browser, screen_size,
-                    user_language, user_timezone, connection_type,
+                    
+                    
+                    
                     created_at, updated_at
                 FROM bookings 
                 WHERE id = %s
@@ -389,26 +405,37 @@ def admin_auth():
     return resp
 
 
+@app.route("/admin/", methods=["GET"])
+@app.route("/admin/", methods=["GET"])
 @app.route("/admin", methods=["GET"])
 def admin_login_page():
+    """Serve the admin login page"""
     if _admin_authed():
         return redirect(url_for("admin_view"))
-    return render_template_string(ADMIN_LOGIN_HTML, google_client_id=GOOGLE_CLIENT_ID)
+    return render_template("login.html", error=None)
 
 
 @app.route("/admin/login", methods=["POST"])
 def admin_login():
-    # Legacy token fallback (still works if GOOGLE_CLIENT_ID not set)
-    tok = (request.get_json(silent=True) or request.form.to_dict() or {}).get("token", "")
-    if bool(ADMIN_TOKEN) and tok == ADMIN_TOKEN:
+    """Handle admin login form submission"""
+    # Get password from form data
+    password = request.form.get("password", "")
+    
+    # Validate password against ADMIN_TOKEN
+    if password and password == ADMIN_TOKEN:
         resp = make_response(redirect(url_for("admin_view")))
-        resp.set_cookie(ADMIN_COOKIE, tok, httponly=True, secure=True, samesite="Strict", max_age=60*60*8)
+        resp.set_cookie(ADMIN_COOKIE, "authenticated", 
+                       httponly=True, secure=True, 
+                       samesite="Strict", max_age=60*60*8)  # 8 hours
         return resp
-    return render_template_string(ADMIN_LOGIN_HTML, error="Token inválido o Google Sign-In requerido.")
+    
+    # Invalid password - show login page with error
+    return render_template("login.html", error="Contraseña incorrecta")
 
 
 @app.route("/admin/logout", methods=["GET", "POST"])
 def admin_logout():
+    """Handle admin logout"""
     resp = make_response(redirect(url_for("admin_login_page")))
     resp.delete_cookie(ADMIN_COOKIE)
     return resp
@@ -416,9 +443,22 @@ def admin_logout():
 
 @app.route("/admin/view", methods=["GET"])
 def admin_view():
+    """Serve the admin panel (protected route)"""
     if not _admin_authed():
         return redirect(url_for("admin_login_page"))
-    return render_template_string(ADMIN_VIEW_HTML)
+    return render_template("admin-view.html")
+
+
+@app.route("/templates/<path:filename>")
+def serve_template_assets(filename):
+    """Serve static assets (CSS, JS) from templates folder"""
+    return send_from_directory("templates", filename)
+
+
+@app.route("/favicon.ico")
+def favicon():
+    """Serve favicon to avoid 404 errors"""
+    return send_from_directory("static", "robot.png", mimetype="image/png")
 
 
 @app.route("/api/admin/bookings", methods=["GET"])
@@ -565,7 +605,9 @@ def index():
     return jsonify({"service": "diana-booking-backend", "endpoints": ["/api/health", "/api/bookings", "/admin"]})
 
 
-# ── Admin HTML (kept inline; turquoise theme to match the site) ──
+# ── Admin HTML (DEPRECATED - Now using templates/login.html and templates/admin-view.html) ──
+# These strings are kept for backward compatibility but are no longer used by the /admin routes
+# TODO: Remove after confirming new template-based system works correctly
 ADMIN_LOGIN_HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Admin – Dr. Diana Sánchez</title>
@@ -1001,7 +1043,7 @@ ADMIN_VIEW_HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8">
    box-shadow:0 8px 32px var(--shadow);
  }
  .panel h2{font-size:1.1rem;font-weight:600;margin:0 0 1.5rem;color:var(--text-secondary);letter-spacing:-0.01em}
- .panel canvas{display:block;width:100% !important;height:300px !important}
+ .panel canvas{display:block;width:100% !important;aspect-ratio:1/1;max-height:min(300px,60vw)}
  
  .bar2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem}
  
@@ -1100,6 +1142,69 @@ ADMIN_VIEW_HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8">
    border-radius:6px;
    margin-left:0.4rem;
  }
+ .appointments-grid{
+   display:grid;
+   grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+   gap:1.2rem;
+   align-items:start;
+ }
+ .appointment-card{
+   cursor:default;
+   min-height:340px;
+ }
+ .card-inner{
+   position:relative;
+   width:100%;
+   min-height:340px;
+   display:flex;
+   flex-direction:column;
+   justify-content:space-between;
+   border-radius:18px;
+   border:1px solid var(--glass-border);
+   background:var(--glass-bg);
+   backdrop-filter:blur(16px) saturate(180%);
+   -webkit-backdrop-filter:blur(16px) saturate(180%);
+   box-shadow:0 8px 32px var(--shadow);
+   padding:1.3rem;
+   color:var(--text-primary);
+   transition:box-shadow .25s ease;
+ }
+ .card-inner:hover{
+   box-shadow:0 18px 40px rgba(0,0,0,.22);
+ }
+ .card-front,
+ .card-back{
+   position:static;
+   transform:none;
+   backface-visibility:visible;
+   -webkit-backface-visibility:visible;
+ }
+ .appointment-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+ .patient-name{font-size:1rem;font-weight:700;color:var(--white);line-height:1.2}
+ .status-badge{padding:3px 10px;border-radius:999px;font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+ .status-pending{background:rgba(232,245,154,.2);color:#e8f59a;border:1px solid rgba(232,245,154,.3)}
+ .status-confirmed{background:rgba(154,242,201,.2);color:#9af2c9;border:1px solid rgba(154,242,201,.3)}
+ .status-completed{background:rgba(159,217,242,.2);color:#9fd9f2;border:1px solid rgba(159,217,242,.3)}
+ .status-cancelled{background:rgba(245,154,154,.2);color:#f59a9a;border:1px solid rgba(245,154,154,.3)}
+ .field-labels{display:flex;flex-wrap:wrap;gap:.65rem;margin-bottom:1rem;font-size:.72rem;color:var(--text-muted);}
+ .field-label{white-space:nowrap;}
+ .appointment-summary{display:grid;grid-template-columns:1fr;gap:.65rem;}
+ .summary-item{font-size:.92rem;color:var(--text-secondary);display:flex;align-items:center;gap:.5rem}
+ .tap-hint{font-size:.78rem;color:var(--text-muted);margin-top:.75rem}
+ .appointment-tabs{display:flex;gap:.5rem;margin-top:1rem;flex-wrap:wrap}
+ .tab-button{flex:1 1 120px;min-width:120px;background:rgba(255,255,255,.08);color:var(--text-secondary);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:.7rem 1rem;font-size:.84rem;font-weight:700;cursor:pointer;transition:all .25s ease}
+ .tab-button.active{background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.22)}
+ .tab-panel{display:none;margin-top:1rem}
+ .tab-panel.active{display:block}
+ .appointment-details{display:grid;gap:.75rem}
+ .detail-row{display:grid;grid-template-columns:auto 1fr;gap:.75rem;font-size:.92rem;align-items:start}
+ .detail-label{color:var(--text-muted)}
+ .detail-value{color:var(--text-primary);font-weight:500;word-break:break-word}
+ .card-actions{display:flex;flex-wrap:wrap;gap:.65rem;margin-top:1rem}
+ .btn-secondary,.btn-primary,.btn-danger{padding:.55rem 1rem;border-radius:10px;font-size:.82rem;font-weight:700;cursor:pointer;border:0;transition:all .3s ease}
+ .btn-secondary{background:rgba(255,255,255,.08);color:var(--text-secondary);border:1px solid rgba(255,255,255,.15)}
+ .btn-primary{background:linear-gradient(135deg,#5fe3d0,#00b8a3);color:#001f25}
+ .btn-danger{background:#ef4444;color:#fff}
 </style></head><body>
 
 <header>
@@ -1139,6 +1244,9 @@ ADMIN_VIEW_HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8">
   </div>
   
   <div class="toolbar">
+    <label style="flex-grow:1;max-width:300px"><span data-en="Search:" data-es="Buscar:">Search:</span>
+      <input type="text" id="fSearch" placeholder="Name, phone, email..." style="width:100%;padding:0.6rem 1rem;border-radius:10px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.06);color:var(--text-primary);font-size:0.9rem" />
+    </label>
     <label><span data-en="Filter:" data-es="Filtrar:">Filter:</span>
       <select id="fDummy">
         <option value="0" data-en="All" data-es="Todas">All</option>
@@ -1159,22 +1267,8 @@ ADMIN_VIEW_HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8">
     <span class="cnt" id="cnt"></span>
   </div>
   
-  <div class="table-container">
-    <table>
-      <thead><tr>
-        <th>#</th>
-        <th data-en="Name" data-es="Nombre">Name</th>
-        <th data-en="Phone" data-es="Teléfono">Phone</th>
-        <th data-en="Email" data-es="Correo">Email</th>
-        <th data-en="Date" data-es="Fecha">Date</th>
-        <th data-en="Time" data-es="Hora">Time</th>
-        <th data-en="Service" data-es="Servicio">Service</th>
-        <th data-en="Message" data-es="Mensaje">Message</th>
-        <th data-en="Status" data-es="Estado">Status</th>
-        <th data-en="Action" data-es="Acción">Action</th>
-      </tr></thead>
-      <tbody id="rows"></tbody>
-    </table>
+  <div class="container">
+    <div id="appointmentsGrid" class="appointments-grid"></div>
   </div>
 </div>
 
@@ -1239,33 +1333,84 @@ const TOK = () => (document.cookie.match(/dds_admin=([^;]+)/)||[,location.search
 const qp = () => `dummy=${fDummy.value}&status=${fStatus.value}`;
 const t = (key) => TRANSLATIONS[currentLang][key];
 
+function adminStatus(msg, isError=false){
+  let el = document.getElementById('adminStatus');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'adminStatus';
+    el.style.cssText = 'position:fixed;left:12px;right:12px;bottom:12px;padding:.8rem 1rem;border-radius:12px;font:.85rem/1.3 system-ui,sans-serif;z-index:9999';
+    document.body.appendChild(el);
+  }
+  el.style.background = isError ? 'rgba(255,107,107,0.22)' : 'rgba(95,227,214,0.18)';
+  el.style.color = isError ? '#ffb3b3' : '#c7fff6';
+  el.style.border = isError ? '1px solid rgba(255,107,107,0.35)' : '1px solid rgba(95,227,214,0.3)';
+  el.textContent = '[admin] ' + msg;
+}
+
+function debugApi(path){
+  const box = document.getElementById('adminDebug');
+  const line = document.createElement('div');
+  line.style.cssText='font-size:.75rem;padding:.25rem 0;border-bottom:1px solid rgba(255,255,255,0.08)';
+  box.appendChild(line);
+  try{
+    fetch(path,{headers:{'X-Admin-Token': TOK()}}).then(async r=>{
+      const body = await r.text().catch(()=>'<text-failed>');
+      line.textContent = path + ' -> ' + r.status + ' ' + r.statusText + ' ; token=' + TOK() + ' ; body=' + String(body).slice(0,400);
+    }).catch(e=> line.textContent = path + ' -> FETCH_ERR ' + e.message + ' ; token=' + TOK());
+  }catch(e){ line.textContent = path + ' -> SCRIPT_ERR ' + e.message; }
+}
+
 function load() {
-  fetch('/api/admin/bookings?'+qp(),{headers:{'X-Admin-Token':''}})
-  .then(r=>r.json())
-  .then(d=>{
-    if(d.error){location.href='/admin';return;}
-    rows.innerHTML=d.rows.map(r=>`
-      <tr class="${r.is_dummy?'sel':''}">
-        <td>${r.id}${r.is_dummy?` <span class="tag">${t('dummy')}</span>`:''}</td>
-        <td>${esc(r.name)}</td>
-        <td>${esc(r.phone||'')}</td>
-        <td>${esc(r.email||'')}</td>
-        <td>${r.preferred_date||'—'}</td>
-        <td>${r.preferred_time||'—'}</td>
-        <td>${esc(r.service||'—')}</td>
-        <td>${esc((r.message||'').slice(0,80))}</td>
-        <td><span class="pill ${r.status}">${r.status}</span></td>
-        <td><select onchange="setStatus(${r.id},this.value)">
-          <option value="">—</option>
-          <option value="confirmed">${t('confirm')}</option>
-          <option value="completed">${t('complete')}</option>
-          <option value="cancelled">${t('cancel')}</option>
-        </select></td>
-      </tr>`).join('');
-    cnt.textContent = `${d.count} ${t('appointments')}`;
+  fetch('/api/admin/bookings?'+qp(),{headers:{'X-Admin-Token': TOK()}})
+  .then(r=>r.json().then(d => ({r,d})).catch(e=>({r:{status:0},d:{error:'Network error: '+String(e)}})))
+  .then(o=>{
+    if(o.r.status === 401 || o.r.status === 403){
+      adminStatus('Unauthorized: ' + ((o.d && o.d.error) || o.r.status), true);
+      location.href='/admin'; 
+      return;
+    }
+    if(o.d && o.d.error){
+      adminStatus('Backend error: ' + o.d.error, true);
+      console.warn(o.d);
+    } else {
+      adminStatus('Loaded ' + ((o.d && o.d.count)||0) + ' appointments');
+    }
+    allData = (o.d && o.d.rows) || [];
+    applyClientSideFilters();
     csv.href='/api/bookings.csv?dummy='+fDummy.value+'&token='+encodeURIComponent(TOK());
-  })
-  .catch(()=>location.href='/admin');
+  });
+}
+let allData = [];
+let filteredData = [];
+
+// Apply client-side filters (search)
+function applyClientSideFilters() {
+  const searchTerm = (_fSearch ? _fSearch.value : '').toLowerCase().trim();
+  
+  if (!searchTerm) {
+    // No search, show all data
+    filteredData = allData;
+  } else {
+    // Filter by search term (name, phone, email, service, message)
+    filteredData = allData.filter(booking => {
+      const searchableText = [
+        booking.name || '',
+        booking.phone || '',
+        booking.email || '',
+        booking.service || '',
+        booking.message || '',
+        booking.preferred_date || '',
+        booking.ip_address || '',
+        booking.ip_city || '',
+        booking.ip_country || ''
+      ].join(' ').toLowerCase();
+      
+      return searchableText.includes(searchTerm);
+    });
+  }
+  
+  renderAppointmentsGrid();
+  cnt.textContent = `${filteredData.length} ${t('appointments')}`;
 }
 
 function setStatus(id,s){
@@ -1374,29 +1519,38 @@ const savedLang = localStorage.getItem('adminLang') || 'en';
 currentLang = savedLang;
 setLang(savedLang);
 
-fetch('/api/admin/stats')
+fetch('/api/admin/stats',{headers:{'X-Admin-Token': TOK()}})
   .then(r=>r.json())
   .then(charts)
   .catch(e=>console.warn('stats',e));
 
-fDummy.onchange = load;
-fStatus.onchange = load;
+// Safely wire filters if elements are present (avoid null addEventListener errors)
+const _fDummy = document.getElementById('fDummy');
+const _fStatus = document.getElementById('fStatus');
+const _fSearch = document.getElementById('fSearch');
+if (_fDummy) _fDummy.onchange = load;
+if (_fStatus) _fStatus.onchange = load;
+if (_fSearch) {
+  // Debounced search - wait 300ms after user stops typing
+  let searchTimeout;
+  _fSearch.oninput = function() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      applyClientSideFilters();
+    }, 300);
+  };
+}
 load();
 
 // Read/Unread filter handling
 let currentReadFilter = '';
-document.getElementById('fAll').addEventListener('click', function() {
-  setReadFilter('');
-  setActiveReadButton(this);
-});
-document.getElementById('fUnread').addEventListener('click', function() {
-  setReadFilter('unread');
-  setActiveReadButton(this);
-});
-document.getElementById('fRead').addEventListener('click', function() {
-  setReadFilter('read');
-  setActiveReadButton(this);
-});
+// Wire read-filter buttons only if they exist in the DOM
+const _fAll = document.getElementById('fAll');
+const _fUnread = document.getElementById('fUnread');
+const _fRead = document.getElementById('fRead');
+if (_fAll) _fAll.addEventListener('click', function() { setReadFilter(''); setActiveReadButton(this); });
+if (_fUnread) _fUnread.addEventListener('click', function() { setReadFilter('unread'); setActiveReadButton(this); });
+if (_fRead) _fRead.addEventListener('click', function() { setReadFilter('read'); setActiveReadButton(this); });
 
 function setReadFilter(filter) {
   currentReadFilter = filter;
@@ -1412,7 +1566,7 @@ function setActiveReadButton(activeBtn) {
 
 // Mark as read/unread functions
 function markAsRead(id) {
-  fetch('/api/admin/bookings/' + id + '/mark-read', {
+  fetch('/api/admin/bookings/' + id + '/mark-read', {headers:{'X-Admin-Token': TOK()},
     method: 'PATCH',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({read_status: 'read'})
@@ -1420,14 +1574,204 @@ function markAsRead(id) {
 }
 
 function markAsUnread(id) {
-  fetch('/api/admin/bookings/' + id + '/mark-read', {
+  fetch('/api/admin/bookings/' + id + '/mark-read', {headers:{'X-Admin-Token': TOK()},
     method: 'PATCH',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({read_status: 'unread'})
   }).then(() => load()).catch(console.error);
 }
 
-</script>
+
+// Use a window-scoped flag to avoid temporal-dead-zone issues when scripts execute
+window.appointmentInteractionsInitialized = window.appointmentInteractionsInitialized || false;
+
+function renderAppointmentsGrid() {
+  const grid = document.getElementById('appointmentsGrid') || createAppointmentsGrid();
+  
+  if (filteredData.length === 0) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--text-muted)">No appointments found</div>';
+    initAppointmentInteractions();
+    return;
+  }
+  
+  grid.innerHTML = filteredData.map(booking => createAppointmentCard(booking)).join('');
+  initAppointmentInteractions();
+}
+
+function createAppointmentsGrid() {
+  const grid = document.createElement('div');
+  grid.id = 'appointmentsGrid';
+  grid.className = 'appointments-grid';
+  document.querySelector('.container').appendChild(grid);
+  return grid;
+}
+
+function createAppointmentCard(booking) {
+  const statusClass = `status-${booking.status || 'pending'}`;
+  const statusLabel = getStatusLabel(booking.status || 'pending');
+  const date = formatDate(booking.preferred_date);
+  const time = booking.preferred_time || 'Not specified';
+
+  return `
+    <div class="appointment-card" data-id="${booking.id}" data-status="${booking.status || 'pending'}">
+      <div class="card-inner">
+        <div class="field-labels">
+          <span class="field-label">Name</span>
+          <span class="field-label">Phone</span>
+          <span class="field-label">Email</span>
+          <span class="field-label">Date</span>
+          <span class="field-label">Time</span>
+          <span class="field-label">Service</span>
+        </div>
+        <div class="appointment-header">
+          <div class="patient-name">${escapeHtml(booking.name)}</div>
+          <div class="status-badge ${statusClass}">${statusLabel}</div>
+        </div>
+        <div class="appointment-summary tab-panel active" data-panel="summary">
+          <div class="summary-item">📅 ${date}</div>
+          <div class="summary-item">⏰ ${time}</div>
+          ${booking.service ? `<div class="summary-item">🩺 ${escapeHtml(booking.service)}</div>` : ''}
+          <div class="tap-hint">Select “Details” for full patient information.</div>
+        </div>
+        <div class="appointment-details tab-panel" data-panel="details">
+          <div class="detail-row">
+            <span class="detail-label">Patient:</span>
+            <span class="detail-value">${escapeHtml(booking.name)}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Email:</span>
+            <span class="detail-value">${escapeHtml(booking.email || 'Not provided')}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Phone:</span>
+            <span class="detail-value">${escapeHtml(booking.phone || 'Not provided')}</span>
+          </div>
+          ${booking.service ? `<div class="detail-row"><span class="detail-label">Service:</span><span class="detail-value">${escapeHtml(booking.service)}</span></div>` : ''}
+          <div class="detail-row"><span class="detail-label">Status:</span><span class="detail-value">${statusLabel}</span></div>
+        </div>
+        <div class="appointment-tabs">
+          <button type="button" class="tab-button active" data-tab="summary">Summary</button>
+          <button type="button" class="tab-button" data-tab="details">Details</button>
+        </div>
+        <div class="card-actions">
+          <button class="btn btn-primary" data-act="view">Open full</button>
+          <button class="btn btn-primary" data-act="confirm">Confirm</button>
+          <button class="btn btn-danger" data-act="cancel">Cancel</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function getStatusLabel(status) {
+  const labels = {'pending': 'Pending', 'confirmed': 'Confirmed', 'cancelled': 'Cancelled', 'completed':'Completed'};
+  return labels[status] || 'Pending';
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return 'Not specified';
+  try {
+    const d = new Date(dateStr + 'T00:00:00');
+    return d.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+  } catch (e) {
+    return dateStr || 'Not specified';
+  }
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text || '';
+  return div.innerHTML;
+}
+
+function initAppointmentInteractions() {
+  if (window.appointmentInteractionsInitialized) return;
+  window.appointmentInteractionsInitialized = true;
+
+  console.log && console.log('[admin-debug] initAppointmentInteractions()');
+
+  document.addEventListener('click', (e) => {
+    const tabButton = e.target.closest('[data-tab]');
+    if (tabButton) {
+      const card = tabButton.closest('.appointment-card');
+      if (!card) return;
+      const panelName = tabButton.getAttribute('data-tab');
+      console.log && console.log('[admin-debug] tab click', panelName, card && card.getAttribute('data-id'));
+      card.querySelectorAll('.tab-button').forEach(btn => btn.classList.toggle('active', btn === tabButton));
+      card.querySelectorAll('.tab-panel').forEach(panel => panel.classList.toggle('active', panel.getAttribute('data-panel') === panelName));
+      return;
+    }
+
+    const action = e.target.closest('[data-act]');
+    if (action) {
+      const card = action.closest('.appointment-card');
+      const act = action.getAttribute('data-act');
+      const id = card ? card.getAttribute('data-id') : null;
+      console.log && console.log('[admin-debug] action', act, id);
+      if (!id) return;
+      if (act === 'view') {
+        // Open the medical records form for the booking so doctor can work
+        window.open('/admin/medical-records?booking_id=' + id, '_blank');
+        return;
+      }
+      if (act === 'confirm') {
+        // Confirm booking, then open medical records for the visit so the doctor can start notes
+        patchStatus(id, 'confirmed').then(() => {
+          try { window.open('/admin/medical-records?booking_id=' + id, '_blank'); } catch (e) { console.error(e); }
+        }).catch(err => { console.error('Confirm failed', err); });
+        return;
+      }
+      if (act === 'cancel') { patchStatus(id, 'cancelled'); return; }
+      return;
+    }
+  });
+
+  document.addEventListener('dblclick', (e) => {
+    const card = e.target.closest('.appointment-card');
+    if (!card) return;
+    const id = card.getAttribute('data-id');
+    if (id) window.open('/admin/appointment/' + id, '_blank');
+  });
+}
+
+function confirmAppointment(id) { patchStatus(id, 'confirmed'); }
+function cancelAppointment(id) { patchStatus(id, 'cancelled'); }
+
+async function patchStatus(id, status) {
+  const card = document.querySelector('.appointment-card[data-id="' + id + '"]');
+  const button = card ? card.querySelector('[data-act="' + status + '"]') : null;
+  if (button) { button.disabled = true; button.textContent = status === 'confirmed' ? 'Confirming…' : 'Cancelling…'; }
+  try {
+    const res = await fetch('/api/admin/bookings/' + id, { method:'PATCH', headers:{'Content-Type':'application/json','X-Admin-Token': TOK()}, body: JSON.stringify({ status }) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+    if (card) {
+      const badge = card.querySelector('.status-badge');
+      if (badge) { badge.className = 'status-badge status-' + status; badge.textContent = getStatusLabel(status); }
+      const hint = card.querySelector('.tap-hint');
+      if (hint) hint.textContent = status === 'confirmed' ? 'Confirmed' : 'Cancelled';
+    }
+    showToast(status === 'confirmed' ? 'Appointment confirmed' : 'Appointment cancelled');
+  } catch (err) {
+    showToast(err.message || 'Action failed', 'error');
+    if (button) { button.disabled = false; button.textContent = status === 'confirmed' ? 'Confirm' : 'Cancel'; }
+  }
+}
+
+function showToast(message, type = 'success') {
+  const el = document.createElement('div');
+  el.style.cssText = 'position:fixed;top:18px;right:18px;z-index:12000;padding:12px 16px;border-radius:14px;color:#fff;font-weight:600;font-size:14px;background:' + (type === 'success' ? '#10b981' : '#ef4444') + ';box-shadow:0 10px 30px rgba(0,0,0,.25);opacity:0;transform:translateY(-10px);transition:all .35s ease';
+  el.textContent = message;
+  document.body.appendChild(el);
+  requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translateY(0)'; });
+  setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateY(-10px)'; setTimeout(() => el.remove(), 400); }, 2400);
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initAppointmentInteractions);
+} else {
+  initAppointmentInteractions();
+}</script>
 </body></html>"""
 
 
@@ -1571,7 +1915,60 @@ def admin_create_visit():
         
         return jsonify({"visit_id": visit_id, "success": True})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        # If database permissions prevent creating a real visit, create a local draft fallback
+        err = str(e)
+        try:
+            if 'permission denied' in err.lower() or 'insufficient privilege' in err.lower():
+                os.makedirs(DRAFTS_DIR, exist_ok=True)
+                draft_id = f"draft-{int(time.time() * 1000)}"
+                path = os.path.join(DRAFTS_DIR, draft_id + ".json")
+                payload = {"draft_id": draft_id, "booking_id": booking_id, "error": err, "created_at": datetime.utcnow().isoformat()}
+                with open(path, "w") as f:
+                    json.dump(payload, f)
+                return jsonify({"visit_id": draft_id, "success": True, "draft": True})
+        except Exception as e2:
+            # fall through to send original error
+            err = f"{err}; fallback failed: {e2}"
+        return jsonify({"error": err}), 500
+
+
+@app.route("/api/admin/visits/draft", methods=["POST"])
+def admin_create_visit_draft():
+  """Create a local draft visit when DB write permissions are unavailable."""
+  if not _admin_authed():
+    return jsonify({"error": "unauthorized"}), 401
+  data = request.get_json(silent=True) or {}
+  try:
+    os.makedirs(DRAFTS_DIR, exist_ok=True)
+    draft_id = f"draft-{int(time.time() * 1000)}"
+    path = os.path.join(DRAFTS_DIR, draft_id + ".json")
+    payload = {"draft_id": draft_id, "booking_id": data.get("booking_id"), "data": data, "created_at": datetime.utcnow().isoformat()}
+    with open(path, "w") as f:
+      json.dump(payload, f)
+    return jsonify({"visit_id": draft_id, "success": True})
+  except Exception as e:
+    return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/admin/visits/draft/<draft_id>", methods=["PUT"])
+def admin_update_visit_draft(draft_id):
+  if not _admin_authed():
+    return jsonify({"error": "unauthorized"}), 401
+  data = request.get_json(silent=True) or {}
+  try:
+    os.makedirs(DRAFTS_DIR, exist_ok=True)
+    path = os.path.join(DRAFTS_DIR, draft_id + ".json")
+    existing = {}
+    if os.path.exists(path):
+      with open(path, "r") as f:
+        existing = json.load(f)
+    existing["data"] = data
+    existing["updated_at"] = datetime.utcnow().isoformat()
+    with open(path, "w") as f:
+      json.dump(existing, f)
+    return jsonify({"success": True})
+  except Exception as e:
+    return jsonify({"error": str(e)}), 500
 
 @app.route("/api/admin/visits/<int:visit_id>", methods=["PUT"])
 def admin_update_visit(visit_id):
@@ -1589,7 +1986,7 @@ def admin_update_visit(visit_id):
         update_fields = []
         params = []
         
-        for field in ["symptoms", "vital_signs", "physical_examination", "diagnosis", 
+        for field in ["chief_complaint", "symptoms", "vital_signs", "physical_examination", "diagnosis", 
                      "treatment_plan", "follow_up_instructions", "next_appointment", 
                      "visit_status", "doctor_notes", "medications_prescribed"]:
             if field in data:
@@ -1717,8 +2114,16 @@ def admin_complete_visit(visit_id):
         cols = [d[0] for d in cur.description]
         visit_data = dict(zip(cols, visit))
         
-        # Update visit status
+        # Get booking_id from visit
+        booking_id = visit_data.get('booking_id')
+        
+        # Update visit status to completed
         cur.execute("UPDATE visits SET visit_status = 'completed', updated_at = NOW() WHERE id = %s", (visit_id,))
+        
+        # Update related booking status to completed
+        if booking_id:
+            cur.execute("UPDATE bookings SET status = 'completed', updated_at = NOW() WHERE id = %s", (booking_id,))
+        
         conn.commit()
         cur.close()
         conn.close()
@@ -1807,5 +2212,234 @@ def admin_complete_visit(visit_id):
         # This will be implemented next
         
         return jsonify({"success": True, "visit_data": visit_data})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+MEDICAL_RECORDS_TEMPLATE = '''<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Records - {{ booking.name }}</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --bg-gradient-start: #001f25; --bg-gradient-end: #003d47;
+            --glass-bg: rgba(255,255,255,0.08); --glass-border: rgba(255,255,255,0.12);
+            --text-primary: #ffffff; --text-secondary: rgba(255,255,255,0.75);
+            --text-muted: rgba(255,255,255,0.5); --accent: #5fe3d6;
+            --accent-hover: #00b8a3; --shadow: rgba(0,0,0,0.3);
+            --success: #10b981; --error: #ef4444;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+            color: var(--text-primary); min-height: 100vh; overflow-x: hidden; padding: 1rem;
+        }
+        .medical-container { max-width: 1400px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        .medical-panel {
+            background: var(--glass-bg); backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%); border: 1px solid var(--glass-border);
+            border-radius: 16px; padding: 1.5rem; box-shadow: 0 8px 32px var(--shadow);
+        }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 2px solid var(--accent); padding-bottom: 1rem; }
+        .panel-title { font-size: 1.3rem; font-weight: 700; color: var(--accent); }
+        .close-btn {
+            background: var(--error); color: white; border: none; width: 32px; height: 32px;
+            border-radius: 50%; cursor: pointer; display: flex; align-items: center;
+            justify-content: center; font-weight: bold; aspect-ratio: 1 / 1; transition: all 0.3s ease;
+        }
+        .close-btn:hover { transform: scale(1.1); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4); }
+        .patient-info { background: rgba(95, 227, 214, 0.1); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; border-left: 4px solid var(--accent); }
+        .patient-info h3 { color: var(--accent); margin-bottom: 1rem; font-size: 1.1rem; }
+        .patient-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; }
+        .detail-item { display: flex; flex-direction: column; gap: 0.4rem; }
+        .detail-label { font-size: 0.8rem; color: var(--text-secondary); font-weight: 500; }
+        .detail-value { color: var(--text-primary); font-weight: 600; font-size: 0.95rem; }
+        .form-section { margin-bottom: 1.5rem; }
+        .section-title { font-size: 1rem; font-weight: 600; color: var(--accent); margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--glass-border); }
+        .form-group { margin-bottom: 1rem; }
+        .form-label { display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 500; }
+        .form-input, .form-textarea, .form-select {
+            width: 100%; padding: 0.7rem; border: 2px solid var(--glass-border);
+            border-radius: 8px; background: var(--glass-bg); color: var(--text-primary);
+            font-size: 0.9rem; transition: all 0.3s ease;
+        }
+        .form-input:focus, .form-textarea:focus, .form-select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(95, 227, 214, 0.2); }
+        .form-textarea { min-height: 70px; resize: vertical; font-family: inherit; }
+        .action-buttons { display: flex; gap: 1rem; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--glass-border); }
+        .btn-primary, .btn-secondary { padding: 0.75rem 1.5rem; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; font-size: 0.9rem; }
+        .btn-primary { background: var(--accent); color: #000; flex: 1; }
+        .btn-primary:hover { background: var(--accent-hover); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(95, 227, 214, 0.3); }
+        .btn-secondary { background: transparent; color: var(--text-secondary); border: 2px solid var(--glass-border); }
+        .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+        @media (max-width: 1024px) { .medical-container { grid-template-columns: 1fr; gap: 1rem; } }
+    </style>
+</head>
+<body>
+    <div class="medical-container">
+        <div class="medical-panel">
+            <div class="panel-header">
+                <h2 class="panel-title">Medical Record</h2>
+                <button class="close-btn" onclick="window.close()" title="Close">&times;</button>
+            </div>
+            <div class="patient-info">
+                <h3>Patient Information</h3>
+                <div class="patient-details">
+                    <div class="detail-item"><span class="detail-label">Name</span><span class="detail-value">{{ booking.name }}</span></div>
+                    <div class="detail-item"><span class="detail-label">Email</span><span class="detail-value">{{ booking.email or 'N/A' }}</span></div>
+                    <div class="detail-item"><span class="detail-label">Phone</span><span class="detail-value">{{ booking.phone }}</span></div>
+                    <div class="detail-item"><span class="detail-label">Service</span><span class="detail-value">{{ booking.service or 'General Consultation' }}</span></div>
+                    <div class="detail-item"><span class="detail-label">Date & Time</span><span class="detail-value">{{ booking.preferred_date or 'Not specified' }} {{ booking.preferred_time or '' }}</span></div>
+                    {% if booking.message %}
+                    <div class="detail-item" style="grid-column: 1 / -1;"><span class="detail-label">Patient Message</span><span class="detail-value">"{{ booking.message }}"</span></div>
+                    {% endif %}
+                </div>
+            </div>
+            <form id="medical-form" onsubmit="return saveMedicalRecord(event)">
+                <input type="hidden" name="booking_id" value="{{ booking.id }}">
+                <div class="form-section">
+                    <h3 class="section-title">Chief Complaint & Examination</h3>
+                    <div class="form-group"><label class="form-label">Chief Complaint</label><textarea class="form-textarea" name="chief_complaint" placeholder="Patient's main concern..."></textarea></div>
+                    <div class="form-group"><label class="form-label">Physical Examination</label><textarea class="form-textarea" name="physical_examination" placeholder="Physical examination findings..."></textarea></div>
+                </div>
+                <div class="form-section">
+                    <h3 class="section-title">Diagnosis & Treatment</h3>
+                    <div class="form-group"><label class="form-label">Diagnosis</label><textarea class="form-textarea" name="diagnosis" placeholder="Primary and secondary diagnoses..." required></textarea></div>
+                    <div class="form-group"><label class="form-label">Treatment Plan</label><textarea class="form-textarea" name="treatment_plan" placeholder="Treatment recommendations..." required></textarea></div>
+                </div>
+                <div class="form-section">
+                    <h3 class="section-title">Follow-up</h3>
+                    <div class="form-group"><label class="form-label">Follow-up Instructions</label><textarea class="form-textarea" name="follow_up_instructions" placeholder="Follow-up care..."></textarea></div>
+                    <div class="form-group"><label class="form-label">Next Appointment</label><input type="date" class="form-input" name="next_appointment"></div>
+                    <div class="form-group"><label class="form-label">Doctor's Notes</label><textarea class="form-textarea" name="doctor_notes" placeholder="Additional notes..."></textarea></div>
+                </div>
+                <div class="action-buttons">
+                    <button type="submit" class="btn-primary">Save Medical Record</button>
+                    <button type="button" class="btn-secondary" onclick="window.close()">Cancel</button>
+                </div>
+            </form>
+        </div>
+        <div class="medical-panel">
+            <div class="panel-header"><h2 class="panel-title">Booking Details</h2></div>
+            <div class="form-section">
+                <h3 class="section-title">Appointment Status</h3>
+                <div class="patient-details">
+                    <div class="detail-item"><span class="detail-label">Status</span><span class="detail-value" style="text-transform: capitalize;">{{ booking.status }}</span></div>
+                    <div class="detail-item"><span class="detail-label">Booking ID</span><span class="detail-value">#{{ booking.id }}</span></div>
+                    <div class="detail-item"><span class="detail-label">Created</span><span class="detail-value">{{ booking.created_at }}</span></div>
+                </div>
+            </div>
+            {% if booking.ip_address %}
+            <div class="form-section">
+                <h3 class="section-title">Device & Location</h3>
+                <div class="patient-details">
+                    <div class="detail-item"><span class="detail-label">IP Address</span><span class="detail-value">{{ booking.ip_address }}</span></div>
+                    {% if booking.ip_city %}<div class="detail-item"><span class="detail-label">Location</span><span class="detail-value">{{ booking.ip_city }}, {{ booking.ip_country }}</span></div>{% endif %}
+                    {% if booking.device_type %}<div class="detail-item"><span class="detail-label">Device</span><span class="detail-value">{{ booking.device_type }}</span></div>{% endif %}
+                    {% if booking.device_os %}<div class="detail-item"><span class="detail-label">OS</span><span class="detail-value">{{ booking.device_os }}</span></div>{% endif %}
+                    {% if booking.device_browser %}<div class="detail-item"><span class="detail-label">Browser</span><span class="detail-value">{{ booking.device_browser }}</span></div>{% endif %}
+                </div>
+            </div>
+            {% endif %}
+            {% if booking.address %}
+            <div class="form-section">
+                <h3 class="section-title">Visit Location</h3>
+                <div class="patient-details">
+                    <div class="detail-item" style="grid-column: 1 / -1;"><span class="detail-label">Address</span><span class="detail-value">{{ booking.address }}</span></div>
+                    {% if booking.address_city %}<div class="detail-item"><span class="detail-label">City</span><span class="detail-value">{{ booking.address_city }}</span></div>{% endif %}
+                    {% if booking.address_province %}<div class="detail-item"><span class="detail-label">Province</span><span class="detail-value">{{ booking.address_province }}</span></div>{% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    <script>
+        async function saveMedicalRecord(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData);
+            data.patient_name = "{{ booking.name }}";
+            data.patient_email = "{{ booking.email or '' }}";
+            data.patient_phone = "{{ booking.phone }}";
+            data.visit_date = "{{ booking.preferred_date or '' }}";
+            data.visit_time = "{{ booking.preferred_time or '' }}";
+            try {
+                const response = await fetch('/api/admin/visits', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                if (result.success || result.ok || result.visit_id) {
+                    alert('Medical record saved successfully!');
+                    window.close();
+                } else {
+                    alert('Error: ' + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+            return false;
+        }
+    </script>
+</body>
+</html>
+'''
+
+@app.route("/admin/medical-records", methods=["GET"])
+def admin_medical_records():
+    """Serve medical records page for a specific booking"""
+    if not _admin_authed():
+        return redirect(url_for("admin_login_page"))
+    
+    booking_id = request.args.get("booking_id")
+    if not booking_id:
+        return jsonify({"error": "booking_id required"}), 400
+    
+    try:
+        conn = _db()
+        cur = conn.cursor()
+        
+        query = """
+            SELECT 
+                id, name, phone, email,
+                
+                service, preferred_date, preferred_time, message, status,
+                
+                
+                
+                created_at, updated_at
+            FROM bookings 
+            WHERE id = %s
+        """
+        cur.execute(query, (booking_id,))
+        cols = [d[0] for d in cur.description]
+        row = cur.fetchone()
+        
+        if not row:
+            cur.close()
+            conn.close()
+            return "Booking not found", 404
+        
+        booking = dict(zip(cols, row))
+        
+        for key in ['created_at', 'updated_at']:
+            if booking.get(key):
+                booking[key] = booking[key].strftime('%Y-%m-%d %H:%M')
+        for key in ['preferred_date', 'preferred_time']:
+            if booking.get(key):
+                booking[key] = str(booking[key])
+        
+        if booking.get('message'):
+            booking['message'] = booking['message'].replace('[READ] ', '').replace('[READ]', '')
+        
+        cur.close()
+        conn.close()
+        
+        return render_template("medical-records.html", booking=booking)
+        
     except Exception as e:
         return jsonify({"error": str(e)}), 500

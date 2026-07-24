@@ -2439,7 +2439,7 @@ def admin_medical_records():
         cur.close()
         conn.close()
         
-        return render_template_string(MEDICAL_RECORDS_TEMPLATE, booking=booking)
+        return render_template("medical-records.html", booking=booking)
         
     except Exception as e:
         return jsonify({"error": str(e)}), 500
