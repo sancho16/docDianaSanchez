@@ -455,6 +455,12 @@ def serve_template_assets(filename):
     return send_from_directory("templates", filename)
 
 
+@app.route("/favicon.ico")
+def favicon():
+    """Serve favicon to avoid 404 errors"""
+    return send_from_directory("static", "robot.png", mimetype="image/png")
+
+
 @app.route("/api/admin/bookings", methods=["GET"])
 def admin_list():
     if not _admin_authed():
