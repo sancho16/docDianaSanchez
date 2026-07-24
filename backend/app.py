@@ -100,12 +100,12 @@ def create_booking():
     ip_address = ip  # Already extracted above for rate limiting
     user_agent = request.headers.get("User-Agent", "")
     
-    # Extract device info from request data (sent from frontend)
-    device_type = (data.get("device_type") or "").strip() or None
-    device_os = (data.get("device_os") or "").strip() or None
-    device_browser = (data.get("device_browser") or "").strip() or None
-    ip_city = (data.get("ip_city") or "").strip() or None
-    ip_country = (data.get("ip_country") or "").strip() or None
+    # Extract device info from request data (sent from frontend with underscore prefix)
+    device_type = (data.get("_device_type") or "").strip() or None
+    device_os = (data.get("_os") or "").strip() or None
+    device_browser = (data.get("_browser") or "").strip() or None
+    ip_city = (data.get("_ip_city") or "").strip() or None
+    ip_country = (data.get("_ip_country") or "").strip() or None
 
     errors = []
     if not NAME_RE.match(name):
@@ -1214,6 +1214,9 @@ ADMIN_VIEW_HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8">
   </div>
   
   <div class="toolbar">
+    <label style="flex-grow:1;max-width:300px"><span data-en="Search:" data-es="Buscar:">Search:</span>
+      <input type="text" id="fSearch" placeholder="Name, phone, email..." style="width:100%;padding:0.6rem 1rem;border-radius:10px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.06);color:var(--text-primary);font-size:0.9rem" />
+    </label>
     <label><span data-en="Filter:" data-es="Filtrar:">Filter:</span>
       <select id="fDummy">
         <option value="0" data-en="All" data-es="Todas">All</option>
@@ -1342,13 +1345,43 @@ function load() {
     } else {
       adminStatus('Loaded ' + ((o.d && o.d.count)||0) + ' appointments');
     }
-    filteredData = (o.d && o.d.rows) || [];
-    renderAppointmentsGrid();
-    cnt.textContent = `${(o.d && o.d.count) || 0} ${t('appointments')}`;
+    allData = (o.d && o.d.rows) || [];
+    applyClientSideFilters();
     csv.href='/api/bookings.csv?dummy='+fDummy.value+'&token='+encodeURIComponent(TOK());
   });
 }
+let allData = [];
 let filteredData = [];
+
+// Apply client-side filters (search)
+function applyClientSideFilters() {
+  const searchTerm = (_fSearch ? _fSearch.value : '').toLowerCase().trim();
+  
+  if (!searchTerm) {
+    // No search, show all data
+    filteredData = allData;
+  } else {
+    // Filter by search term (name, phone, email, service, message)
+    filteredData = allData.filter(booking => {
+      const searchableText = [
+        booking.name || '',
+        booking.phone || '',
+        booking.email || '',
+        booking.service || '',
+        booking.message || '',
+        booking.preferred_date || '',
+        booking.ip_address || '',
+        booking.ip_city || '',
+        booking.ip_country || ''
+      ].join(' ').toLowerCase();
+      
+      return searchableText.includes(searchTerm);
+    });
+  }
+  
+  renderAppointmentsGrid();
+  cnt.textContent = `${filteredData.length} ${t('appointments')}`;
+}
 
 function setStatus(id,s){
   if(!s)return;
@@ -1464,8 +1497,19 @@ fetch('/api/admin/stats',{headers:{'X-Admin-Token': TOK()}})
 // Safely wire filters if elements are present (avoid null addEventListener errors)
 const _fDummy = document.getElementById('fDummy');
 const _fStatus = document.getElementById('fStatus');
+const _fSearch = document.getElementById('fSearch');
 if (_fDummy) _fDummy.onchange = load;
 if (_fStatus) _fStatus.onchange = load;
+if (_fSearch) {
+  // Debounced search - wait 300ms after user stops typing
+  let searchTimeout;
+  _fSearch.oninput = function() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      applyClientSideFilters();
+    }, 300);
+  };
+}
 load();
 
 // Read/Unread filter handling
