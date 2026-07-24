@@ -242,12 +242,40 @@ class MedicalRecordsManager {
             visit_status: 'in_progress'
         };
 
+        // Include current medications and symptoms so the server has a full snapshot
         try {
+            visitData.medications_prescribed = this.medications.map(m => ({
+                medication_name: m.medication_name,
+                dosage: m.dosage,
+                frequency: m.frequency,
+                duration: m.duration || null,
+                instructions: m.instructions || null,
+                id: m.id || null
+            }));
+        } catch (e) { visitData.medications_prescribed = []; }
+
+        try {
+            visitData.symptoms = this.symptoms.map(s => ({
+                symptom_name: s.symptom_name,
+                severity: s.severity || null,
+                duration: s.duration || null,
+                description: s.description || null,
+                id: s.id || null
+            }));
+        } catch (e) { visitData.symptoms = []; }
+
+        try {
+            // Add admin token header if available (TOK defined in admin UI)
+            const headers = { 'Content-Type': 'application/json' };
+            try { if (typeof TOK === 'function') headers['X-Admin-Token'] = TOK(); } catch (e) {}
+
+            // Disable Save button while saving
+            const saveBtn = document.querySelector('.btn-secondary[onclick="saveProgress()"]');
+            if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving…'; }
+
             const response = await fetch(`/api/admin/visits/${this.visitId}`, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers,
                 body: JSON.stringify(visitData)
             });
 
@@ -258,11 +286,14 @@ class MedicalRecordsManager {
             } else if (!response.ok) {
                 throw new Error(result.error || 'Failed to save progress');
             }
+            if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save Progress'; }
         } catch (error) {
             console.error('Error saving progress:', error);
             if (showConfirmation) {
                 this.showNotification('Error saving progress: ' + error.message, 'error');
             }
+            const saveBtn = document.querySelector('.btn-secondary[onclick="saveProgress()"]');
+            if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save Progress'; }
         }
     }
 
