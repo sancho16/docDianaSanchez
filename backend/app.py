@@ -7,7 +7,7 @@ import json
 from datetime import datetime, timedelta
 
 import psycopg2
-from flask import Flask, send_from_directory, request, jsonify, Response, render_template_string, make_response, redirect, url_for
+from flask import Flask, send_from_directory, request, jsonify, Response, render_template_string, render_template, make_response, redirect, url_for
 from flask_cors import CORS
 import notify
 
@@ -16,9 +16,13 @@ app = Flask(__name__)
 # Only the real site may call this API. Adjust if you add a staging domain.
 ALLOWED_ORIGINS = os.environ.get(
     "ALLOWED_ORIGINS",
-    "https://docdianasanchez.com,https://www.docdianasanchez.com",
+    "https://docdianasanchez.com,https://www.docdianasanchez.com,https://api.docdianasanchez.com",
 ).split(",")
-CORS(app, origins=ALLOWED_ORIGINS, methods=["POST", "GET", "OPTIONS"])
+CORS(app, 
+     origins=ALLOWED_ORIGINS, 
+     methods=["POST", "GET", "OPTIONS", "PUT", "DELETE", "PATCH"],
+     allow_headers=["Content-Type", "X-Admin-Token"],
+     supports_credentials=True)
 
 DATABASE_URL = os.environ.get(
     "DATABASE_URL",
@@ -401,26 +405,37 @@ def admin_auth():
     return resp
 
 
+@app.route("/admin/", methods=["GET"])
+@app.route("/admin/", methods=["GET"])
 @app.route("/admin", methods=["GET"])
 def admin_login_page():
+    """Serve the admin login page"""
     if _admin_authed():
         return redirect(url_for("admin_view"))
-    return render_template_string(ADMIN_LOGIN_HTML, google_client_id=GOOGLE_CLIENT_ID)
+    return render_template("login.html", error=None)
 
 
 @app.route("/admin/login", methods=["POST"])
 def admin_login():
-    # Legacy token fallback (still works if GOOGLE_CLIENT_ID not set)
-    tok = (request.get_json(silent=True) or request.form.to_dict() or {}).get("token", "")
-    if bool(ADMIN_TOKEN) and tok == ADMIN_TOKEN:
+    """Handle admin login form submission"""
+    # Get password from form data
+    password = request.form.get("password", "")
+    
+    # Validate password against ADMIN_TOKEN
+    if password and password == ADMIN_TOKEN:
         resp = make_response(redirect(url_for("admin_view")))
-        resp.set_cookie(ADMIN_COOKIE, tok, httponly=True, secure=True, samesite="Strict", max_age=60*60*8)
+        resp.set_cookie(ADMIN_COOKIE, "authenticated", 
+                       httponly=True, secure=True, 
+                       samesite="Strict", max_age=60*60*8)  # 8 hours
         return resp
-    return render_template_string(ADMIN_LOGIN_HTML, error="Token inválido o Google Sign-In requerido.")
+    
+    # Invalid password - show login page with error
+    return render_template("login.html", error="Contraseña incorrecta")
 
 
 @app.route("/admin/logout", methods=["GET", "POST"])
 def admin_logout():
+    """Handle admin logout"""
     resp = make_response(redirect(url_for("admin_login_page")))
     resp.delete_cookie(ADMIN_COOKIE)
     return resp
@@ -428,9 +443,16 @@ def admin_logout():
 
 @app.route("/admin/view", methods=["GET"])
 def admin_view():
+    """Serve the admin panel (protected route)"""
     if not _admin_authed():
         return redirect(url_for("admin_login_page"))
-    return render_template_string(ADMIN_VIEW_HTML)
+    return render_template("admin-view.html")
+
+
+@app.route("/templates/<path:filename>")
+def serve_template_assets(filename):
+    """Serve static assets (CSS, JS) from templates folder"""
+    return send_from_directory("templates", filename)
 
 
 @app.route("/api/admin/bookings", methods=["GET"])
@@ -577,7 +599,9 @@ def index():
     return jsonify({"service": "diana-booking-backend", "endpoints": ["/api/health", "/api/bookings", "/admin"]})
 
 
-# ── Admin HTML (kept inline; turquoise theme to match the site) ──
+# ── Admin HTML (DEPRECATED - Now using templates/login.html and templates/admin-view.html) ──
+# These strings are kept for backward compatibility but are no longer used by the /admin routes
+# TODO: Remove after confirming new template-based system works correctly
 ADMIN_LOGIN_HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Admin – Dr. Diana Sánchez</title>
