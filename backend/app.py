@@ -95,6 +95,17 @@ def create_booking():
     preferred_time = (data.get("preferred_time") or "").strip() or None
     service = (data.get("service") or "").strip() or None
     message = (data.get("message") or "").strip()
+    
+    # Capture device/tracking information
+    ip_address = ip  # Already extracted above for rate limiting
+    user_agent = request.headers.get("User-Agent", "")
+    
+    # Extract device info from request data (sent from frontend)
+    device_type = (data.get("device_type") or "").strip() or None
+    device_os = (data.get("device_os") or "").strip() or None
+    device_browser = (data.get("device_browser") or "").strip() or None
+    ip_city = (data.get("ip_city") or "").strip() or None
+    ip_country = (data.get("ip_country") or "").strip() or None
 
     errors = []
     if not NAME_RE.match(name):
@@ -126,10 +137,12 @@ def create_booking():
         cur = conn.cursor()
         cur.execute(
             """INSERT INTO bookings
-               (name, phone, email, preferred_date, preferred_time, service, message, status, is_dummy)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,'pending',FALSE)
+               (name, phone, email, preferred_date, preferred_time, service, message, status, is_dummy,
+                ip_address, device_type, device_os, device_browser, ip_city, ip_country)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,'pending',FALSE,%s,%s,%s,%s,%s,%s)
                RETURNING id, created_at""",
-            (name, phone, email, preferred_date, preferred_time, service, message),
+            (name, phone, email, preferred_date, preferred_time, service, message,
+             ip_address, device_type, device_os, device_browser, ip_city, ip_country),
         )
         row = cur.fetchone()
         bid = row[0]
@@ -166,7 +179,8 @@ def get_bookings():
         query = """
             SELECT 
                 id, name, phone, email, preferred_date, preferred_time,
-                service, message, status, is_dummy, created_at, updated_at
+                service, message, status, is_dummy, created_at, updated_at,
+                ip_address, device_type, device_os, device_browser, ip_city, ip_country
             FROM bookings 
             WHERE 1=1
         """
@@ -1898,7 +1912,7 @@ def admin_update_visit(visit_id):
         update_fields = []
         params = []
         
-        for field in ["symptoms", "vital_signs", "physical_examination", "diagnosis", 
+        for field in ["chief_complaint", "symptoms", "vital_signs", "physical_examination", "diagnosis", 
                      "treatment_plan", "follow_up_instructions", "next_appointment", 
                      "visit_status", "doctor_notes", "medications_prescribed"]:
             if field in data:
@@ -2026,8 +2040,16 @@ def admin_complete_visit(visit_id):
         cols = [d[0] for d in cur.description]
         visit_data = dict(zip(cols, visit))
         
-        # Update visit status
+        # Get booking_id from visit
+        booking_id = visit_data.get('booking_id')
+        
+        # Update visit status to completed
         cur.execute("UPDATE visits SET visit_status = 'completed', updated_at = NOW() WHERE id = %s", (visit_id,))
+        
+        # Update related booking status to completed
+        if booking_id:
+            cur.execute("UPDATE bookings SET status = 'completed', updated_at = NOW() WHERE id = %s", (booking_id,))
+        
         conn.commit()
         cur.close()
         conn.close()
